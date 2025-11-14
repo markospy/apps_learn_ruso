@@ -66,6 +66,20 @@
                 <p class="font-bold text-gray-800 text-lg">{{ pronoun }}</p>
                 <p class="text-gray-600 text-sm">{{ getPronounSpanish(pronoun) }}</p>
               </div>
+              <button
+                @click="playPronunciation(pronoun)"
+                :disabled="!currentVerb"
+                class="flex flex-shrink-0 justify-center items-center bg-blue-100 hover:bg-blue-200 disabled:opacity-50 rounded-lg w-10 h-10 text-blue-600 transition-colors disabled:cursor-not-allowed"
+                title="Escuchar pronunciación"
+              >
+                <svg v-if="!isPlaying[pronoun]" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6m-6 4h6" />
+                </svg>
+              </button>
               <input
                 type="text"
                 v-model="userInputs[pronoun]"
@@ -298,7 +312,16 @@
       'Вы': null,
       'Они': null
   });
+  const isPlaying = reactive({
+      'Я': false,
+      'Ты': false,
+      'Он/Она': false,
+      'Мы': false,
+      'Вы': false,
+      'Они': false
+  });
   const showHelpModal = ref(false);
+  let currentUtterance = null;
 
   const newVerb = reactive({
       infinitive: '',
@@ -429,6 +452,12 @@
           return;
       }
 
+      // Detener cualquier audio que esté reproduciéndose
+      if (currentUtterance && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          currentUtterance = null;
+      }
+
       // Resetear el estado
       resetPractice();
 
@@ -438,10 +467,17 @@
   }
 
   function resetPractice() {
-      // Limpiar todos los inputs
+      // Detener cualquier audio que esté reproduciéndose
+      if (currentUtterance && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          currentUtterance = null;
+      }
+
+      // Limpiar todos los inputs y estados de reproducción
       Object.keys(userInputs).forEach(pronoun => {
           userInputs[pronoun] = '';
           checkedAnswers[pronoun] = null;
+          isPlaying[pronoun] = false;
       });
   }
 
@@ -464,6 +500,51 @@
           'Они': 'Ellos/Ellas'
       };
       return translations[pronoun] || '';
+  }
+
+  function playPronunciation(pronoun) {
+      if (!currentVerb.value) return;
+
+      // Verificar que la API esté disponible
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+          console.warn('Speech Synthesis API no está disponible en este navegador');
+          return;
+      }
+
+      const speechSynthesis = window.speechSynthesis;
+
+      // Detener cualquier audio que esté reproduciéndose
+      if (currentUtterance) {
+          speechSynthesis.cancel();
+      }
+
+      // Obtener la conjugación correcta
+      const conjugation = conjugate(currentVerb.value, pronoun);
+      const fullText = `${pronoun} ${conjugation}`;
+
+      // Crear el utterance con configuración para ruso
+      currentUtterance = new SpeechSynthesisUtterance(fullText);
+      currentUtterance.lang = 'ru-RU'; // Idioma ruso
+      currentUtterance.rate = 0.8; // Velocidad un poco más lenta para mejor comprensión
+      currentUtterance.pitch = 1;
+      currentUtterance.volume = 1;
+
+      // Marcar como reproduciendo
+      isPlaying[pronoun] = true;
+
+      // Eventos para limpiar el estado
+      currentUtterance.onend = () => {
+          isPlaying[pronoun] = false;
+          currentUtterance = null;
+      };
+
+      currentUtterance.onerror = () => {
+          isPlaying[pronoun] = false;
+          currentUtterance = null;
+      };
+
+      // Reproducir
+      speechSynthesis.speak(currentUtterance);
   }
 
   </script>
