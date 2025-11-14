@@ -107,6 +107,9 @@
                   Correcto: <span class="font-bold">{{ conjugate(currentVerb, pronoun) }}</span>
                 </p>
               </div>
+              <div v-if="currentVerb" class="flex-shrink-0 min-w-[120px] text-gray-500 text-xs italic">
+                {{ getPronunciationSpanish(pronoun, conjugate(currentVerb, pronoun)) }}
+              </div>
             </div>
           </div>
 
@@ -269,6 +272,9 @@
                 <strong>Nota:</strong> La raíz del verbo se obtiene eliminando la terminación del infinitivo.
                 Por ejemplo, para "работать" (trabajar), la raíz es "работа".
               </p>
+              <p class="text-gray-700 text-sm">
+                <strong>Nota:</strong> Si la raíz es dura (termina en т, д, к, п, м, etc.), se usa la vocal dura (у, е).Si la raíz es suave (termina en ч, ж, ш, щ o vocal), se usa la vocal suave (ю, ё).
+              </p>
             </div>
           </div>
         </div>
@@ -279,6 +285,7 @@
   <script setup>
   import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue';
   import { initializeDatabase, addVerb, getVerbs, deleteVerb as deleteVerbFromDb } from './db';
+  import { transliterate } from 'transliteration';
 
   // --- Constantes ---
   const PRONOUNS = {
@@ -545,6 +552,96 @@
 
       // Reproducir
       speechSynthesis.speak(currentUtterance);
+  }
+
+  // Función para convertir transliteración a pronunciación en español
+  function transliterationToSpanish(transliterated) {
+      let result = transliterated.toLowerCase();
+
+      // Reemplazos específicos para sonidos rusos en español
+      // Orden importante: primero los más largos
+      result = result
+          .replace(/shch/g, 'shch')
+          .replace(/yo/g, 'ió')
+          .replace(/yu/g, 'iu')
+          .replace(/ya/g, 'ia')
+          .replace(/ye/g, 'e')
+          .replace(/zh/g, 'zh')
+          .replace(/ch/g, 'ch')
+          .replace(/sh/g, 'sh')
+          .replace(/ts/g, 'ts')
+          .replace(/kh/g, 'j')
+          .replace(/y([^aeiou])/g, 'i$1') // 'y' antes de consonante = 'i'
+          .replace(/y$/g, 'i') // 'y' al final = 'i'
+          .replace(/ь/g, '') // Eliminar signo suave
+          .replace(/'/g, ''); // Eliminar apóstrofes de transliteración
+
+      // Aplicar reducción vocálica rusa: 'o' no acentuada se pronuncia como 'a'
+      // Esto es una simplificación, pero ayuda con palabras como "говорить"
+      const words = result.split(' ');
+      result = words.map(word => {
+          // Si la palabra tiene más de 2 sílabas, las 'o' no acentuadas pueden sonar como 'a'
+          // Simplificación: cambiar 'o' por 'a' en posiciones no finales (excepto si está acentuada)
+          if (word.length > 3 && word.includes('o')) {
+              // Mantener 'o' al final y en posiciones específicas
+              return word.replace(/o(?![aeiou]*$)/g, 'a');
+          }
+          return word;
+      }).join(' ');
+
+      return result;
+  }
+
+  // Función para obtener la pronunciación en español
+  function getPronunciationSpanish(pronoun, conjugation) {
+      if (!pronoun || !conjugation) return '';
+
+      // Transliterar el texto ruso
+      const fullText = `${pronoun} ${conjugation}`;
+      let transliterated = transliterate(fullText, { unknown: '?' });
+
+      // Convertir a pronunciación en español
+      let pronunciation = transliterationToSpanish(transliterated);
+
+      // Aplicar reglas de acentuación básicas
+      // Para verbos, el acento suele estar en la raíz o en la terminación según el tipo
+      const words = pronunciation.split(' ');
+      const result = words.map((word, wordIndex) => {
+          if (word.length <= 2) return word;
+
+          // Si es el pronombre, mantenerlo simple
+          if (wordIndex === 0) return word;
+
+          // Para el verbo, intentar detectar el acento
+          // Regla básica: si termina en consonante, acentuar la penúltima sílaba
+          const vowels = word.match(/[aeiou]/gi);
+          if (vowels && vowels.length > 1) {
+              // Buscar la penúltima vocal
+              let vowelPositions = [];
+              for (let i = 0; i < word.length; i++) {
+                  if (/[aeiou]/i.test(word[i])) {
+                      vowelPositions.push(i);
+                  }
+              }
+
+              if (vowelPositions.length >= 2) {
+                  // Acentuar la penúltima vocal
+                  const accentPos = vowelPositions[vowelPositions.length - 2];
+                  const char = word[accentPos];
+                  const accented = char === 'a' ? 'á' :
+                                 char === 'e' ? 'é' :
+                                 char === 'i' ? 'í' :
+                                 char === 'o' ? 'ó' :
+                                 char === 'u' ? 'ú' : char;
+
+                  return word.substring(0, accentPos) + accented + word.substring(accentPos + 1);
+              }
+          }
+
+          return word;
+      }).join(' ');
+
+      return result;
   }
 
   </script>
