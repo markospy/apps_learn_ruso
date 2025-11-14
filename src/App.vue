@@ -47,6 +47,15 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </button>
+          <button
+            @click="showGenderModal = true"
+            class="flex justify-center items-center bg-pink-100 hover:bg-pink-200 shadow-md rounded-full w-10 h-10 text-pink-600 transition-colors"
+            title="Ver reglas de géneros de sustantivos"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -454,10 +463,182 @@
                 </div>
               </div>
             </div>
+
+            <!-- Reglas adicionales -->
+            <div class="space-y-4 mt-6">
+              <!-- Regla de la letra E -->
+              <div class="bg-yellow-50 p-4 border-2 border-yellow-300 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg">
+                  Regla especial de la letra Е
+                </h4>
+                <p class="mb-3 text-gray-700 text-sm">
+                  <strong>La letra Е tónica se pronuncia como [э], la letra Е átona se pronuncia como [и]:</strong>
+                </p>
+                <div class="gap-4 grid md:grid-cols-2">
+                  <div class="bg-white p-3 border border-yellow-200 rounded">
+                    <p class="mb-2 font-bold text-gray-800">é = [э]</p>
+                    <p class="text-gray-700 text-sm"><strong>Ejemplos:</strong> музей, студент</p>
+                  </div>
+                  <div class="bg-white p-3 border border-yellow-200 rounded">
+                    <p class="mb-2 font-bold text-gray-800">e = [и]</p>
+                    <p class="text-gray-700 text-sm"><strong>Ejemplos:</strong> телефон, сестра</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Regla de la letra Ё -->
+              <div class="bg-orange-50 p-4 border-2 border-orange-300 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg">
+                  Regla especial de la letra Ё
+                </h4>
+                <p class="mb-2 text-gray-700 text-sm">
+                  <strong>Ё siempre под ударением!</strong> (Ё siempre está acentuada)
+                </p>
+                <p class="text-gray-700 text-sm">
+                  <strong>La letra Ё siempre es tónica</strong> - siempre lleva el acento en la palabra.
+                </p>
+              </div>
+
+              <!-- Regla de la letra Я -->
+              <div class="bg-purple-50 p-4 border-2 border-purple-300 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg">
+                  Regla especial de la letra Я al principio de palabra
+                </h4>
+                <p class="mb-3 text-gray-700 text-sm">
+                  <strong>Al principio de la palabra Я bajo el acento se lee como [йа], y sin el acento como [йи]:</strong>
+                </p>
+                <div class="gap-4 grid md:grid-cols-2">
+                  <div class="bg-white p-3 border border-purple-200 rounded">
+                    <p class="mb-2 font-bold text-gray-800">Я́ = [йа]</p>
+                    <p class="text-gray-700 text-sm"><strong>Ejemplo:</strong> яблоко</p>
+                  </div>
+                  <div class="bg-white p-3 border border-purple-200 rounded">
+                    <p class="mb-2 font-bold text-gray-800">Я = [йи]</p>
+                    <p class="text-gray-700 text-sm"><strong>Ejemplos:</strong> язык, Япония</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="bg-yellow-50 mt-6 p-4 border border-yellow-200 rounded-lg">
               <p class="text-gray-700 text-sm">
                 <strong>Nota importante:</strong> El apóstrofe (') después de la consonante indica que la consonante es suave (palatalizada).
                 Por ejemplo, [м'э] significa que la "м" se pronuncia de forma suave, como en español cuando dices "mi" con la lengua hacia el paladar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de ayuda con géneros de sustantivos -->
+      <div v-if="showGenderModal" class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 p-4" @click.self="showGenderModal = false">
+        <div class="bg-white shadow-xl rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <div class="top-0 sticky flex justify-between items-center bg-white px-6 py-4 border-b">
+            <h3 class="font-bold text-gray-800 text-2xl">Género de Sustantivos</h3>
+            <button
+              @click="showGenderModal = false"
+              class="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="p-6">
+            <p class="mb-6 text-gray-700 text-sm">
+              <strong>En la lengua rusa hay tres géneros de sustantivos. En la mayoría de los casos la terminación de palabra indica el género.</strong>
+            </p>
+
+            <div class="gap-4 grid md:grid-cols-3">
+              <!-- Género Masculino -->
+              <div class="bg-blue-50 p-4 border-2 border-blue-300 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg text-center">
+                  Мужской род (= он)<br>
+                  <span class="font-normal text-base">Masculino</span>
+                </h4>
+                <div class="mb-3">
+                  <p class="mb-2 font-semibold text-gray-700 text-sm">Terminaciones:</p>
+                  <p class="font-bold text-gray-800">Ø, -ь</p>
+                </div>
+                <div class="bg-white mb-3 p-3 border border-blue-200 rounded">
+                  <p class="mb-2 font-semibold text-gray-700 text-sm">Ejemplos:</p>
+                  <ul class="space-y-1 text-gray-700 text-sm">
+                    <li>• стол</li>
+                    <li>• студент</li>
+                    <li>• музей</li>
+                    <li>• словарь</li>
+                  </ul>
+                </div>
+                <div class="bg-red-50 p-3 border border-red-200 rounded">
+                  <p class="mb-2 font-semibold text-red-700 text-sm">Excepciones:</p>
+                  <ul class="space-y-1 text-red-600 text-sm">
+                    <li>• папа</li>
+                    <li>• дедушка</li>
+                    <li>• дядя</li>
+                    <li>• кофе</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Género Femenino -->
+              <div class="bg-pink-50 p-4 border-2 border-pink-300 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg text-center">
+                  Женский род (= она)<br>
+                  <span class="font-normal text-base">Femenino</span>
+                </h4>
+                <div class="mb-3">
+                  <p class="mb-2 font-semibold text-gray-700 text-sm">Terminaciones:</p>
+                  <p class="font-bold text-gray-800">-а/-я, -ь</p>
+                </div>
+                <div class="bg-white mb-3 p-3 border border-pink-200 rounded">
+                  <p class="mb-2 font-semibold text-gray-700 text-sm">Ejemplos:</p>
+                  <ul class="space-y-1 text-gray-700 text-sm">
+                    <li>• вода</li>
+                    <li>• страна</li>
+                    <li>• фамилия</li>
+                  </ul>
+                </div>
+                <div class="bg-red-50 p-3 border border-red-200 rounded">
+                  <p class="mb-2 font-semibold text-red-700 text-sm">Excepciones:</p>
+                  <ul class="space-y-1 text-red-600 text-sm">
+                    <li>• дверь</li>
+                    <li>• тетрадь</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Género Neutro -->
+              <div class="bg-green-50 p-4 border-2 border-green-300 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg text-center">
+                  Средний род (= оно)<br>
+                  <span class="font-normal text-base">Neutro</span>
+                </h4>
+                <div class="mb-3">
+                  <p class="mb-2 font-semibold text-gray-700 text-sm">Terminaciones:</p>
+                  <p class="font-bold text-gray-800">-о/е</p>
+                </div>
+                <div class="bg-white mb-3 p-3 border border-green-200 rounded">
+                  <p class="mb-2 font-semibold text-gray-700 text-sm">Ejemplos:</p>
+                  <ul class="space-y-1 text-gray-700 text-sm">
+                    <li>• окно</li>
+                    <li>• море</li>
+                  </ul>
+                </div>
+                <div class="bg-red-50 p-3 border border-red-200 rounded">
+                  <p class="mb-2 font-semibold text-red-700 text-sm">Excepciones:</p>
+                  <ul class="space-y-1 text-red-600 text-sm">
+                    <li>• имя</li>
+                    <li>• время</li>
+                    <li>• такси</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-yellow-50 mt-6 p-4 border border-yellow-200 rounded-lg">
+              <p class="text-gray-700 text-sm">
+                <strong>Nota:</strong> El símbolo "Ø" indica que el sustantivo termina en consonante sin terminación específica.
+                Las excepciones son palabras que no siguen las reglas generales de terminación.
               </p>
             </div>
           </div>
@@ -513,6 +694,7 @@
   });
   const showHelpModal = ref(false);
   const showVowelsModal = ref(false);
+  const showGenderModal = ref(false);
   const pronunciationText = ref('');
   const playFullSentence = ref(true);
   let currentUtterance = null;
@@ -577,6 +759,9 @@
           }
           if (showVowelsModal.value) {
               showVowelsModal.value = false;
+          }
+          if (showGenderModal.value) {
+              showGenderModal.value = false;
           }
       }
   };
