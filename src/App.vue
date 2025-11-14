@@ -19,6 +19,13 @@
                    activeTab === 'manage' ? 'bg-blue-500 text-white' : 'text-gray-700 bg-gray-200 hover:bg-gray-300']">
           Administrar Verbos
         </button>
+        <button
+          @click="activeTab = 'pronunciation'"
+          type="button"
+          :class="['px-6 py-2 mx-2 text-lg font-medium rounded-t-lg transition duration-200 cursor-pointer',
+                   activeTab === 'pronunciation' ? 'bg-blue-500 text-white' : 'text-gray-700 bg-gray-200 hover:bg-gray-300']">
+          Pronunciación
+        </button>
 
         <!-- Botón de ayuda flotante -->
         <button
@@ -80,8 +87,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6m-6 4h6" />
                 </svg>
               </button>
-              <input
-                type="text"
+            <input
+              type="text"
                 v-model="userInputs[pronoun]"
                 :disabled="checkedAnswers[pronoun] !== null"
                 @keyup.enter="checkAnswer(pronoun)"
@@ -199,6 +206,82 @@
               Eliminar
             </button>
           </div>
+        </div>
+      </div>
+
+      <div v-if="activeTab === 'pronunciation'" class="p-6 sm:p-8 card">
+        <h2 class="mb-6 pb-2 border-b font-semibold text-gray-700 text-2xl">
+          Traductor de Pronunciación
+        </h2>
+
+        <div class="mb-4">
+          <label class="block mb-2 font-medium text-gray-700 text-sm">
+            Escribe texto en ruso:
+          </label>
+          <textarea
+            v-model="pronunciationText"
+            placeholder="Escribe o pega texto en ruso aquí..."
+            class="p-4 border border-gray-300 focus:border-blue-500 rounded-lg focus:ring-2 focus:ring-blue-500 w-full min-h-[200px] text-lg"
+            rows="8"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-between items-center mb-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span class="font-medium text-gray-700 text-sm">Modo de reproducción:</span>
+            <div class="inline-block relative w-14 h-7">
+              <input
+                type="checkbox"
+                v-model="playFullSentence"
+                class="sr-only peer"
+                id="playModeToggle"
+              >
+              <label
+                for="playModeToggle"
+                class="absolute inset-0 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors cursor-pointer"
+              >
+                <span class="top-0.5 left-0.5 absolute bg-white rounded-full w-6 h-6 transition-transform peer-checked:translate-x-7"></span>
+              </label>
+            </div>
+            <span class="text-gray-600 text-sm">
+              {{ playFullSentence ? 'Oración completa' : 'Palabra individual' }}
+            </span>
+          </label>
+        </div>
+
+        <div v-if="pronunciationText.trim()" class="space-y-4">
+          <div
+            v-for="(line, lineIndex) in processedLines"
+            :key="lineIndex"
+            class="pb-4 border-gray-200 border-b last:border-b-0"
+          >
+            <div
+              @click="playText(line.original, lineIndex)"
+              class="group hover:bg-blue-50 p-3 rounded-lg transition-colors cursor-pointer"
+            >
+              <p class="mb-2 font-medium text-gray-800 group-hover:text-blue-600 text-xl">
+                {{ line.original || '(línea vacía)' }}
+              </p>
+              <p class="text-gray-500 text-sm italic">
+                {{ line.transliteration || '' }}
+              </p>
+            </div>
+            <div v-if="line.words && line.words.length > 0" class="flex flex-wrap gap-2 mt-2">
+              <span
+                v-for="(word, wordIndex) in line.words"
+                :key="wordIndex"
+                @click.stop="playText(word.text, `${lineIndex}-${wordIndex}`, true)"
+                class="bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded text-sm transition-colors cursor-pointer"
+                :title="word.transliteration"
+              >
+                {{ word.text }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="py-8 text-gray-500 text-center">
+          <p>Escribe texto en ruso arriba para ver su transliteración y escuchar su pronunciación.</p>
         </div>
       </div>
 
@@ -328,6 +411,8 @@
       'Они': false
   });
   const showHelpModal = ref(false);
+  const pronunciationText = ref('');
+  const playFullSentence = ref(true);
   let currentUtterance = null;
 
   const newVerb = reactive({
@@ -338,6 +423,37 @@
   // --- Propiedades Calculadas ---
   const allAnswersChecked = computed(() => {
       return Object.values(checkedAnswers).every(answer => answer !== null);
+  });
+
+  // Procesar líneas del texto de pronunciación
+  const processedLines = computed(() => {
+      if (!pronunciationText.value.trim()) return [];
+
+      const lines = pronunciationText.value.split('\n');
+      return lines.map(line => {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) {
+              return { original: '', transliteration: '', words: [] };
+          }
+
+          // Transliterar la línea completa
+          const transliterated = getPronunciationSpanish('', trimmedLine);
+
+          // Dividir en palabras
+          const words = trimmedLine.split(/\s+/).filter(w => w.trim()).map(word => {
+              const wordTransliteration = getPronunciationSpanish('', word);
+              return {
+                  text: word,
+                  transliteration: wordTransliteration
+              };
+          });
+
+          return {
+              original: trimmedLine,
+              transliteration: transliterated,
+              words: words
+          };
+      });
   });
 
   // --- Lógica de la Base de Datos ---
@@ -594,10 +710,11 @@
 
   // Función para obtener la pronunciación en español
   function getPronunciationSpanish(pronoun, conjugation) {
-      if (!pronoun || !conjugation) return '';
+      // Si no hay conjugation, retornar vacío
+      if (!conjugation) return '';
 
-      // Transliterar el texto ruso
-      const fullText = `${pronoun} ${conjugation}`;
+      // Si hay pronombre, incluir ambos; si no, solo el conjugation
+      const fullText = pronoun ? `${pronoun} ${conjugation}` : conjugation;
       let transliterated = transliterate(fullText, { unknown: '?' });
 
       // Convertir a pronunciación en español
@@ -609,10 +726,10 @@
       const result = words.map((word, wordIndex) => {
           if (word.length <= 2) return word;
 
-          // Si es el pronombre, mantenerlo simple
-          if (wordIndex === 0) return word;
+          // Si hay pronombre y es la primera palabra, mantenerlo simple
+          if (pronoun && wordIndex === 0) return word;
 
-          // Para el verbo, intentar detectar el acento
+          // Para el verbo o palabras sin pronombre, intentar detectar el acento
           // Regla básica: si termina en consonante, acentuar la penúltima sílaba
           const vowels = word.match(/[aeiou]/gi);
           if (vowels && vowels.length > 1) {
@@ -642,6 +759,54 @@
       }).join(' ');
 
       return result;
+  }
+
+  // Función para reproducir texto (oración completa o palabra)
+  function playText(text, identifier, forceWord = false) {
+      if (!text || !text.trim()) return;
+
+      // Verificar que la API esté disponible
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+          console.warn('Speech Synthesis API no está disponible en este navegador');
+          return;
+      }
+
+      const speechSynthesis = window.speechSynthesis;
+
+      // Detener cualquier audio que esté reproduciéndose
+      if (currentUtterance) {
+          speechSynthesis.cancel();
+      }
+
+      // Determinar qué texto reproducir
+      let textToPlay = text.trim();
+
+      // Si es una palabra individual forzada o el modo es palabra individual
+      if (forceWord || (!playFullSentence.value && textToPlay.includes(' '))) {
+          // Si contiene espacios, tomar solo la primera palabra
+          if (textToPlay.includes(' ')) {
+              textToPlay = textToPlay.split(/\s+/)[0];
+          }
+      }
+
+      // Crear el utterance con configuración para ruso
+      currentUtterance = new SpeechSynthesisUtterance(textToPlay);
+      currentUtterance.lang = 'ru-RU'; // Idioma ruso
+      currentUtterance.rate = 0.8; // Velocidad un poco más lenta para mejor comprensión
+      currentUtterance.pitch = 1;
+      currentUtterance.volume = 1;
+
+      // Eventos para limpiar el estado
+      currentUtterance.onend = () => {
+          currentUtterance = null;
+      };
+
+      currentUtterance.onerror = () => {
+          currentUtterance = null;
+      };
+
+      // Reproducir
+      speechSynthesis.speak(currentUtterance);
   }
 
   </script>
