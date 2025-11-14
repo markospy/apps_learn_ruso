@@ -27,16 +27,27 @@
           Pronunciación
         </button>
 
-        <!-- Botón de ayuda flotante -->
-        <button
-          @click="showHelpModal = true"
-          class="top-6 right-6 absolute flex justify-center items-center bg-blue-100 hover:bg-blue-200 shadow-md rounded-full w-10 h-10 text-blue-600 transition-colors"
-          title="Ver tabla de conjugaciones"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
+        <!-- Botones de ayuda flotantes -->
+        <div class="top-6 right-6 absolute flex flex-col gap-2">
+          <button
+            @click="showHelpModal = true"
+            class="flex justify-center items-center bg-blue-100 hover:bg-blue-200 shadow-md rounded-full w-10 h-10 text-blue-600 transition-colors"
+            title="Ver tabla de conjugaciones"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+          <button
+            @click="showVowelsModal = true"
+            class="flex justify-center items-center bg-green-100 hover:bg-green-200 shadow-md rounded-full w-10 h-10 text-green-600 transition-colors"
+            title="Ver pronunciación de vocales"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div v-if="activeTab === 'practice'" class="relative p-6 sm:p-8 card">
@@ -362,6 +373,96 @@
           </div>
         </div>
       </div>
+
+      <!-- Modal de ayuda con pronunciación de vocales -->
+      <div v-if="showVowelsModal" class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 p-4" @click.self="showVowelsModal = false">
+        <div class="bg-white shadow-xl rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <div class="top-0 sticky flex justify-between items-center bg-white px-6 py-4 border-b">
+            <h3 class="font-bold text-gray-800 text-2xl">Pronunciación de Vocales E, Ё, Ю, Я</h3>
+            <button
+              @click="showVowelsModal = false"
+              class="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="p-6">
+            <div class="gap-6 grid md:grid-cols-2">
+              <!-- Sección 1: Al principio de palabra, después de vocal o ь -->
+              <div class="bg-blue-50 p-4 border-2 border-blue-200 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg">
+                  Al principio de palabra, después de vocal o Ь
+                </h4>
+                <p class="mb-4 text-gray-600 text-sm italic">
+                  En estos casos, las vocales se pronuncian con sonido "й" (y) al inicio
+                </p>
+                <div class="space-y-3">
+                  <div class="bg-white p-3 border border-blue-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">Е [й + э]</p>
+                    <p class="mb-2 text-gray-600 text-sm">Se pronuncia como "ye"</p>
+                    <p class="text-gray-700"><strong>Ejemplos:</strong> ем, моет, лье</p>
+                  </div>
+                  <div class="bg-white p-3 border border-blue-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">Ё [й + о]</p>
+                    <p class="mb-2 text-gray-600 text-sm">Se pronuncia como "yó"</p>
+                    <p class="text-gray-700"><strong>Ejemplos:</strong> ёлка, даёт, пьёт</p>
+                  </div>
+                  <div class="bg-white p-3 border border-blue-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">Ю [й + у]</p>
+                    <p class="mb-2 text-gray-600 text-sm">Se pronuncia como "yu"</p>
+                    <p class="text-gray-700"><strong>Ejemplos:</strong> юг, мою, пью</p>
+                  </div>
+                  <div class="bg-white p-3 border border-blue-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">Я [й + а]</p>
+                    <p class="mb-2 text-gray-600 text-sm">Se pronuncia como "ya"</p>
+                    <p class="text-gray-700"><strong>Ejemplos:</strong> яблоко, моя, семья</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección 2: Después de consonante -->
+              <div class="bg-green-50 p-4 border-2 border-green-200 rounded-lg">
+                <h4 class="mb-3 font-bold text-gray-800 text-lg">
+                  Después de consonante
+                </h4>
+                <p class="mb-4 text-gray-600 text-sm italic">
+                  En estos casos, la consonante se suaviza (palataliza) y la vocal se pronuncia sin el sonido "й"
+                </p>
+                <div class="space-y-3">
+                  <div class="bg-white p-3 border border-green-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">ме [м'э]</p>
+                    <p class="mb-2 text-gray-600 text-sm">"m" suave + "e"</p>
+                    <p class="text-gray-700"><strong>Ejemplo:</strong> место</p>
+                  </div>
+                  <div class="bg-white p-3 border border-green-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">мё [м'о]</p>
+                    <p class="mb-2 text-gray-600 text-sm">"m" suave + "o"</p>
+                    <p class="text-gray-700"><strong>Ejemplo:</strong> мёд</p>
+                  </div>
+                  <div class="bg-white p-3 border border-green-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">мю [м'у]</p>
+                    <p class="mb-2 text-gray-600 text-sm">"m" suave + "u"</p>
+                    <p class="text-gray-700"><strong>Ejemplo:</strong> мюсли</p>
+                  </div>
+                  <div class="bg-white p-3 border border-green-100 rounded">
+                    <p class="mb-1 font-bold text-gray-800">мя [м'а]</p>
+                    <p class="mb-2 text-gray-600 text-sm">"m" suave + "a"</p>
+                    <p class="text-gray-700"><strong>Ejemplo:</strong> мята</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bg-yellow-50 mt-6 p-4 border border-yellow-200 rounded-lg">
+              <p class="text-gray-700 text-sm">
+                <strong>Nota importante:</strong> El apóstrofe (') después de la consonante indica que la consonante es suave (palatalizada).
+                Por ejemplo, [м'э] significa que la "м" se pronuncia de forma suave, como en español cuando dices "mi" con la lengua hacia el paladar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </template>
 
@@ -411,6 +512,7 @@
       'Они': false
   });
   const showHelpModal = ref(false);
+  const showVowelsModal = ref(false);
   const pronunciationText = ref('');
   const playFullSentence = ref(true);
   let currentUtterance = null;
@@ -469,8 +571,13 @@
 
   // Función para manejar tecla Escape
   const handleEscapeKey = (event) => {
-      if (event.key === 'Escape' && showHelpModal.value) {
-          showHelpModal.value = false;
+      if (event.key === 'Escape') {
+          if (showHelpModal.value) {
+              showHelpModal.value = false;
+          }
+          if (showVowelsModal.value) {
+              showVowelsModal.value = false;
+          }
       }
   };
 
