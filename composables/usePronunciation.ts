@@ -131,44 +131,36 @@ export const usePronunciation = () => {
     return allSentences.filter(s => s.trim())
   }
 
-  // Traducir texto usando API externa gratuita (LibreTranslate)
+  // Traducir texto usando API externa gratuita (MyMemory)
   const translateText = async (text: string, sourceLanguage: string = 'ru', targetLanguage: string = 'es'): Promise<string> => {
     if (!text || !text.trim()) return ''
 
     try {
-      // Usar LibreTranslate API pública y gratuita
-      const response = await fetch('https://libretranslate.com/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          q: text,
-          source: sourceLanguage,
-          target: targetLanguage,
-          format: 'text'
-        })
-      })
+      // Usar MyMemory Translation API (gratuita y sin autenticación)
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLanguage}|${targetLanguage}`
+      )
 
       if (!response.ok) {
         throw new Error(`Error en la traducción: ${response.statusText}`)
       }
 
       const data = await response.json()
-      return data.translatedText || ''
-    } catch (error) {
-      console.error('Error al traducir:', error)
-      // Si LibreTranslate falla, intentar con MyMemory como respaldo
-      try {
-        const fallbackResponse = await fetch(
-          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLanguage}|${targetLanguage}`
-        )
-        const fallbackData = await fallbackResponse.json()
-        return fallbackData.responseData?.translatedText || ''
-      } catch (fallbackError) {
-        console.error('Error en traducción de respaldo:', fallbackError)
+
+      if (data.responseStatus === 200 && data.responseData?.translatedText) {
+        return data.responseData.translatedText
+      }
+
+      // Si hay un error en la respuesta
+      if (data.responseStatus !== 200) {
+        console.warn('MyMemory API error:', data.responseStatus)
         return ''
       }
+
+      return ''
+    } catch (error) {
+      console.error('Error al traducir:', error)
+      return ''
     }
   }
 
