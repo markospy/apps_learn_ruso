@@ -207,9 +207,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-// TODO: Crear composable useNouns cuando la API esté lista
-const nouns = ref([])
-const loading = ref(false)
+const { nouns, loading, fetchNouns, createNoun, deleteNoun } = useNouns()
 const error = ref('')
 
 const newNoun = reactive({
@@ -270,9 +268,9 @@ const removeTranslation = (index) => {
   newNoun.translations.splice(index, 1)
 }
 
-// Temporalmente usamos datos locales hasta que la API esté lista
+// Cargar sustantivos al montar
 onMounted(() => {
-  // fetchNouns()
+  fetchNouns()
 })
 
 const genderLabel = (gender) => {
@@ -282,11 +280,6 @@ const genderLabel = (gender) => {
     neuter: 'Neutro (оно)'
   }
   return labels[gender] || gender
-}
-
-const fetchNouns = async () => {
-  // TODO: Implementar cuando el endpoint de la API esté listo
-  console.log('fetchNouns - API endpoint pendiente')
 }
 
 // Resetear formulario
@@ -303,7 +296,6 @@ const resetForm = () => {
 
 const handleAddNoun = async () => {
   error.value = ''
-  loading.value = true
 
   // Preparar datos para la API
   const nounData = {
@@ -314,26 +306,23 @@ const handleAddNoun = async () => {
     translations: newNoun.translations,
   }
 
-  // TODO: Implementar cuando el endpoint de la API esté listo
-  console.log('Nuevo sustantivo:', nounData)
+  const result = await createNoun(nounData)
 
-  // Simular guardado local
-  nouns.value.push({
-    id: Date.now(),
-    ...nounData
-  })
-
-  // Limpiar formulario
-  resetForm()
-
-  loading.value = false
+  if (result.success) {
+    resetForm()
+  } else {
+    error.value = result.error || 'Error al añadir el sustantivo'
+  }
 }
 
 const handleDeleteNoun = async (id) => {
   if (!confirm('¿Estás seguro de que quieres eliminar este sustantivo?')) return
 
-  // TODO: Implementar cuando el endpoint de la API esté listo
-  nouns.value = nouns.value.filter(n => n.id !== id)
+  const result = await deleteNoun(id)
+
+  if (!result.success) {
+    alert(result.error || 'Error al eliminar el sustantivo')
+  }
 }
 </script>
 
