@@ -1,12 +1,12 @@
-// Estado global compartido para los modales
-const conjugationsModal = useState('grammarModals.conjugations', () => null)
-const vowelsModal = useState('grammarModals.vowels', () => null)
-const genderModal = useState('grammarModals.gender', () => null)
-const pronounsModal = useState('grammarModals.pronouns', () => null)
-const consonantsModal = useState('grammarModals.consonants', () => null)
-const accusativeModal = useState('grammarModals.accusative', () => null)
-
 export const useGrammarModals = () => {
+  // Estado global compartido para los modales
+  const conjugationsModal = useState<any>('grammarModals.conjugations', () => null)
+  const vowelsModal = useState<any>('grammarModals.vowels', () => null)
+  const genderModal = useState<any>('grammarModals.gender', () => null)
+  const pronounsModal = useState<any>('grammarModals.pronouns', () => null)
+  const consonantsModal = useState<any>('grammarModals.consonants', () => null)
+  const accusativeModal = useState<any>('grammarModals.accusative', () => null)
+
   const openModal = (modalType: string) => {
     nextTick(() => {
       switch (modalType) {
