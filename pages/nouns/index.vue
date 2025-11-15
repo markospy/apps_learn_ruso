@@ -17,11 +17,11 @@
         <div class="gap-4 grid md:grid-cols-2">
           <div>
             <label for="noun" class="block mb-1 font-medium text-gray-700 text-sm">
-              Sustantivo (ej: стол - mesa)
+              Sustantivo <span class="text-red-500">*</span> (ej: стол)
             </label>
             <input
               id="noun"
-              v-model="newNoun.sustantivo"
+              v-model="newNoun.noun"
               type="text"
               required
               class="input-field"
@@ -31,7 +31,7 @@
 
           <div>
             <label for="gender" class="block mb-1 font-medium text-gray-700 text-sm">
-              Género
+              Género <span class="text-red-500">*</span>
             </label>
             <select
               id="gender"
@@ -49,7 +49,7 @@
         <div class="gap-4 grid md:grid-cols-2">
           <div>
             <label for="singular" class="block mb-1 font-medium text-gray-700 text-sm">
-              Singular
+              Singular <span class="text-red-500">*</span>
             </label>
             <input
               id="singular"
@@ -63,7 +63,7 @@
 
           <div>
             <label for="plural" class="block mb-1 font-medium text-gray-700 text-sm">
-              Plural
+              Plural <span class="text-red-500">*</span>
             </label>
             <input
               id="plural"
@@ -76,13 +76,78 @@
           </div>
         </div>
 
-        <button
-          type="submit"
-          :disabled="loading || !newNoun.sustantivo.trim()"
-          class="w-full btn-primary"
-        >
-          {{ loading ? 'Añadiendo...' : 'Añadir Sustantivo' }}
-        </button>
+        <!-- Traducciones -->
+        <div>
+          <label class="block mb-2 font-medium text-gray-700 text-sm">
+            Traducciones
+          </label>
+
+          <!-- Formulario para agregar traducción -->
+          <div class="flex gap-2 mb-3">
+            <select
+              v-model="newTranslationLanguage"
+              class="flex-shrink-0 w-32 input-field"
+            >
+              <option value="es">Español</option>
+              <option value="en">Inglés</option>
+              <option value="pt">Portugués</option>
+            </select>
+            <input
+              v-model="newTranslationText"
+              type="text"
+              class="flex-1 input-field"
+              placeholder="Escribe la traducción"
+              @keyup.enter="addTranslation"
+            />
+            <button
+              type="button"
+              @click="addTranslation"
+              :disabled="!newTranslationText.trim()"
+              class="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 px-4 py-2 rounded-md font-medium text-white text-sm transition-colors disabled:cursor-not-allowed"
+            >
+              Agregar
+            </button>
+          </div>
+
+          <!-- Lista de traducciones agregadas -->
+          <div v-if="newNoun.translations.length > 0" class="space-y-2">
+            <div
+              v-for="(translation, index) in newNoun.translations"
+              :key="index"
+              class="flex justify-between items-center bg-gray-50 hover:bg-gray-100 p-2 rounded-md"
+            >
+              <span class="text-gray-700 text-sm">
+                <span class="font-semibold">{{ getLanguageLabel(Object.keys(translation)[0]) }}:</span>
+                {{ Object.values(translation)[0] }}
+              </span>
+              <button
+                type="button"
+                @click="removeTranslation(index)"
+                class="hover:bg-red-100 px-2 py-1 rounded font-medium text-red-500 text-sm transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+          <p v-else class="text-gray-500 text-xs italic">No hay traducciones agregadas</p>
+        </div>
+
+        <div class="flex gap-4">
+          <button
+            type="submit"
+            :disabled="loading || !isFormValid"
+            class="flex-1 btn-primary"
+          >
+            {{ loading ? 'Añadiendo...' : 'Añadir Sustantivo' }}
+          </button>
+          <button
+            type="button"
+            @click="resetForm"
+            class="px-6 btn-secondary"
+          >
+            Limpiar
+          </button>
+        </div>
       </form>
     </div>
 
@@ -120,7 +185,7 @@
           class="flex justify-between items-center bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors"
         >
           <div>
-            <p class="font-medium text-gray-800 text-lg">{{ noun.sustantivo }}</p>
+            <p class="font-medium text-gray-800 text-lg">{{ noun.noun }}</p>
             <p class="text-gray-500 text-sm">
               Género: {{ genderLabel(noun.gender) }} | Singular: {{ noun.singular }} | Plural: {{ noun.plural }}
             </p>
@@ -148,11 +213,62 @@ const loading = ref(false)
 const error = ref('')
 
 const newNoun = reactive({
-  sustantivo: '',
+  noun: '',
   gender: 'masculine',
   singular: '',
   plural: '',
+  translations: [],
 })
+
+const newTranslationLanguage = ref('es')
+const newTranslationText = ref('')
+
+// Validar que todos los campos requeridos estén llenos
+const isFormValid = computed(() => {
+  return !!(
+    newNoun.noun.trim() &&
+    newNoun.singular.trim() &&
+    newNoun.plural.trim()
+  )
+})
+
+// Obtener etiqueta del idioma
+const getLanguageLabel = (langCode) => {
+  const labels = {
+    es: 'Español',
+    en: 'Inglés',
+    pt: 'Portugués'
+  }
+  return labels[langCode] || langCode
+}
+
+// Agregar traducción
+const addTranslation = () => {
+  const text = newTranslationText.value.trim()
+  if (!text) return
+
+  const language = newTranslationLanguage.value
+  const translationObj = { [language]: text }
+
+  // Verificar que no exista ya una traducción en ese idioma
+  const exists = newNoun.translations.some(t => Object.keys(t)[0] === language)
+  if (exists) {
+    // Si existe, actualizar la traducción existente
+    const index = newNoun.translations.findIndex(t => Object.keys(t)[0] === language)
+    newNoun.translations[index] = translationObj
+  } else {
+    // Si no existe, agregar nueva traducción
+    newNoun.translations.push(translationObj)
+  }
+
+  // Limpiar input
+  newTranslationText.value = ''
+}
+
+// Eliminar traducción
+const removeTranslation = (index) => {
+  newNoun.translations.splice(index, 1)
+}
 
 // Temporalmente usamos datos locales hasta que la API esté lista
 onMounted(() => {
@@ -173,24 +289,42 @@ const fetchNouns = async () => {
   console.log('fetchNouns - API endpoint pendiente')
 }
 
+// Resetear formulario
+const resetForm = () => {
+  newNoun.noun = ''
+  newNoun.gender = 'masculine'
+  newNoun.singular = ''
+  newNoun.plural = ''
+  newNoun.translations = []
+  newTranslationLanguage.value = 'es'
+  newTranslationText.value = ''
+  error.value = ''
+}
+
 const handleAddNoun = async () => {
   error.value = ''
   loading.value = true
 
+  // Preparar datos para la API
+  const nounData = {
+    noun: newNoun.noun.trim(),
+    gender: newNoun.gender,
+    singular: newNoun.singular.trim(),
+    plural: newNoun.plural.trim(),
+    translations: newNoun.translations,
+  }
+
   // TODO: Implementar cuando el endpoint de la API esté listo
-  console.log('Nuevo sustantivo:', newNoun)
+  console.log('Nuevo sustantivo:', nounData)
 
   // Simular guardado local
   nouns.value.push({
     id: Date.now(),
-    ...newNoun
+    ...nounData
   })
 
   // Limpiar formulario
-  newNoun.sustantivo = ''
-  newNoun.gender = 'masculine'
-  newNoun.singular = ''
-  newNoun.plural = ''
+  resetForm()
 
   loading.value = false
 }
