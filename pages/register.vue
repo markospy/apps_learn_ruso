@@ -150,7 +150,7 @@ const handleRegister = async () => {
   const result = await register(userData)
 
   if (result.success) {
-    router.push('/practice')
+    router.push('/verbs/practice')
   } else {
     error.value = result.error || 'Error al registrarse'
   }

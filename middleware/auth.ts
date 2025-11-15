@@ -14,7 +14,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   // Si está autenticado y trata de acceder a login o register, redirigir a practice
   if (isAuthenticated.value && (to.path === '/login' || to.path === '/register')) {
-    return navigateTo('/practice')
+    return navigateTo('')
   }
 })
 

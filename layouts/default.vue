@@ -5,20 +5,13 @@
         <div class="flex justify-between items-center h-16">
           <!-- Logo / Título -->
           <div class="flex items-center">
-            <NuxtLink to="/practice" class="font-bold text-blue-600 hover:text-blue-700 text-2xl">
+            <NuxtLink to="" class="font-bold text-blue-600 hover:text-blue-700 text-2xl">
               🇷🇺 Ruso App
             </NuxtLink>
           </div>
 
           <!-- Navegación Desktop -->
           <div class="hidden md:flex items-center space-x-1">
-            <NuxtLink
-              to="/practice"
-              class="hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
-              active-class="text-blue-600 bg-blue-50"
-            >
-              Práctica
-            </NuxtLink>
 
             <!-- Menú Vocabulario con submenús -->
             <div class="relative" @mouseenter="showVocabularioMenu = true" @mouseleave="showVocabularioMenu = false">
@@ -59,7 +52,7 @@
                       ➕ Agregar
                     </NuxtLink>
                     <NuxtLink
-                      to="/practice"
+                      to="/verbs/practice"
                       class="block hover:bg-blue-50 px-4 py-2 rounded-b-md text-gray-700 hover:text-blue-600 text-sm"
                     >
                       🎯 Práctica
@@ -131,13 +124,6 @@
 
       <!-- Navegación móvil -->
       <div class="md:hidden space-y-1 px-2 py-2 border-gray-200 border-t">
-        <NuxtLink
-          to="/practice"
-          class="block hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-base"
-          active-class="text-blue-600 bg-blue-50"
-        >
-          Práctica
-        </NuxtLink>
 
         <!-- Vocabulario Mobile -->
         <div>
@@ -184,7 +170,7 @@
                   ➕ Agregar
                 </NuxtLink>
                 <NuxtLink
-                  to="/practice"
+                  to="/verbs/practice"
                   class="block hover:bg-blue-50 px-3 py-2 rounded-md text-gray-600 hover:text-blue-600 text-sm"
                 >
                   🎯 Práctica

@@ -48,7 +48,7 @@ export const useAuth = () => {
   const logout = () => {
     authToken.value = null
     user.value = null
-    navigateTo('/login')
+    navigateTo('')
   }
 
   const fetchCurrentUser = async () => {
