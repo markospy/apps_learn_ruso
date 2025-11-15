@@ -254,6 +254,34 @@ export const usePronunciation = () => {
         const recognized = event.results[0][0].transcript.trim()
         const accuracy = calculateAccuracy(expectedText.trim(), recognized)
 
+        // Log detallado para depuración
+        const expectedNormalized = expectedText.trim().toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f\u0483-\u0489\u1AB0-\u1AFF]/g, '')
+          .replace(/[\u0301]/g, '')
+          .normalize('NFC')
+          .replace(/[.,!?;:—–\-«»""''()]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+
+        const recognizedNormalized = recognized.toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f\u0483-\u0489\u1AB0-\u1AFF]/g, '')
+          .replace(/[\u0301]/g, '')
+          .normalize('NFC')
+          .replace(/[.,!?;:—–\-«»""''()]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+
+        console.log('Evaluación de pronunciación:', {
+          esperado: expectedText.trim(),
+          reconocido: recognized,
+          esperado_normalizado: expectedNormalized,
+          reconocido_normalizado: recognizedNormalized,
+          son_iguales: expectedNormalized === recognizedNormalized,
+          precisión: accuracy
+        })
+
         recordingResults.value[sentenceIndex] = {
           recognized,
           accuracy
@@ -333,50 +361,158 @@ export const usePronunciation = () => {
 
   // Calcular precisión comparando el texto esperado con el reconocido
   const calculateAccuracy = (expected: string, recognized: string): number => {
-    // Normalizar textos: convertir a minúsculas y eliminar puntuación
+    // Normalizar textos de manera más flexible
     const normalize = (text: string): string => {
       return text
         .toLowerCase()
-        .replace(/[.,!?;:—–\-]/g, ' ')
+        // Eliminar acentos/tildes rusos (la Web Speech API no los devuelve)
+        // Los acentos en ruso pueden estar como caracteres combinados o como parte del carácter
+        // Primero normalizar a NFD para separar caracteres base de diacríticos
+        .normalize('NFD')
+        // Eliminar todos los diacríticos (incluyendo acentos agudos, graves, etc.)
+        .replace(/[\u0300-\u036f\u0483-\u0489\u1AB0-\u1AFF]/g, '')
+        // También eliminar acentos agudos explícitos (U+0301)
+        .replace(/[\u0301]/g, '')
+        // Volver a normalizar a NFC
+        .normalize('NFC')
+        // Eliminar puntuación
+        .replace(/[.,!?;:—–\-«»""''()]/g, ' ')
+        // Normalizar espacios
         .replace(/\s+/g, ' ')
         .trim()
+    }
+
+    // Normalización especial para comparación (considera variaciones comunes)
+    const normalizeForComparison = (text: string): string => {
+      return normalize(text)
+        // Normalizar caracteres similares que pueden confundirse en reconocimiento de voz
+        .replace(/ё/g, 'е')  // ё puede reconocerse como е
+        // No normalizar й/и porque son diferentes fonemas
     }
 
     const expectedNormalized = normalize(expected)
     const recognizedNormalized = normalize(recognized)
 
+    // También crear versiones normalizadas para comparación flexible
+    const expectedForComparison = normalizeForComparison(expected)
+    const recognizedForComparison = normalizeForComparison(recognized)
+
     if (!expectedNormalized) return 0
     if (!recognizedNormalized) return 0
 
-    // Dividir en palabras
-    const expectedWords = expectedNormalized.split(/\s+/).filter(w => w.trim())
-    const recognizedWords = recognizedNormalized.split(/\s+/).filter(w => w.trim())
+    // Si son idénticos después de normalizar, retornar 100%
+    if (expectedNormalized === recognizedNormalized) {
+      return 100
+    }
+
+    // Si son idénticos después de normalización flexible, retornar 95% (casi perfecto)
+    if (expectedForComparison === recognizedForComparison) {
+      return 95
+    }
+
+    // Dividir en palabras (usar versión normalizada para comparación)
+    const expectedWords = expectedForComparison.split(/\s+/).filter(w => w.trim())
+    const recognizedWords = recognizedForComparison.split(/\s+/).filter(w => w.trim())
 
     if (expectedWords.length === 0) return 0
 
-    // Calcular coincidencias exactas
-    let exactMatches = 0
+    // Calcular coincidencias exactas en orden
+    let exactMatchesInOrder = 0
     const minLength = Math.min(expectedWords.length, recognizedWords.length)
 
     for (let i = 0; i < minLength; i++) {
       if (expectedWords[i] === recognizedWords[i]) {
-        exactMatches++
+        exactMatchesInOrder++
       }
     }
 
-    // Calcular precisión basada en palabras exactas
-    const wordAccuracy = (exactMatches / expectedWords.length) * 100
+    // Calcular coincidencias sin importar el orden (exactas)
+    const expectedWordsSet = new Set(expectedWords)
+    const recognizedWordsSet = new Set(recognizedWords)
 
-    // También calcular similitud de caracteres usando Levenshtein distance
+    let exactMatches = 0
+    expectedWords.forEach(word => {
+      if (recognizedWordsSet.has(word)) {
+        exactMatches++
+      }
+    })
+
+    // Calcular matches aproximados (palabras similares)
+    let approximateMatches = 0
+    const usedRecognizedIndices = new Set<number>()
+
+    expectedWords.forEach(expectedWord => {
+      let bestMatchIndex = -1
+      let bestSimilarity = 0
+
+      recognizedWords.forEach((recognizedWord, index) => {
+        if (usedRecognizedIndices.has(index)) return
+
+        const similarity = calculateLevenshteinSimilarity(expectedWord, recognizedWord)
+        if (similarity > bestSimilarity && similarity >= 70) {
+          bestSimilarity = similarity
+          bestMatchIndex = index
+        }
+      })
+
+      if (bestMatchIndex >= 0) {
+        approximateMatches++
+        usedRecognizedIndices.add(bestMatchIndex)
+      }
+    })
+
+    // Calcular precisión basada en palabras exactas en orden
+    const orderAccuracy = (exactMatchesInOrder / expectedWords.length) * 100
+
+    // Calcular precisión basada en palabras exactas encontradas (sin importar orden)
+    const exactMatchAccuracy = (exactMatches / expectedWords.length) * 100
+
+    // Calcular precisión basada en palabras aproximadas
+    const approximateMatchAccuracy = (approximateMatches / expectedWords.length) * 100
+
+    // Calcular similitud de caracteres usando Levenshtein distance
     const charSimilarity = calculateLevenshteinSimilarity(
       expectedNormalized.replace(/\s+/g, ''),
       recognizedNormalized.replace(/\s+/g, '')
     )
 
-    // Combinar ambas métricas (70% palabras, 30% caracteres)
-    const finalAccuracy = (wordAccuracy * 0.7) + (charSimilarity * 0.3)
+    // Calcular similitud de palabras usando Levenshtein
+    const wordSimilarity = calculateWordSimilarity(expectedWords, recognizedWords)
+
+    // Combinar métricas con pesos optimizados
+    // Priorizar matches exactos, luego aproximados, luego similitud general
+    const finalAccuracy = (
+      orderAccuracy * 0.25 +           // 25% orden exacto
+      exactMatchAccuracy * 0.30 +      // 30% palabras exactas encontradas
+      approximateMatchAccuracy * 0.20 + // 20% palabras aproximadas
+      charSimilarity * 0.15 +          // 15% similitud de caracteres
+      wordSimilarity * 0.10            // 10% similitud promedio de palabras
+    )
 
     return Math.round(Math.max(0, Math.min(100, finalAccuracy)))
+  }
+
+  // Calcular similitud promedio entre palabras
+  const calculateWordSimilarity = (words1: string[], words2: string[]): number => {
+    if (words1.length === 0 || words2.length === 0) return 0
+
+    let totalSimilarity = 0
+    let comparisons = 0
+
+    // Comparar cada palabra esperada con la más similar encontrada
+    words1.forEach(word1 => {
+      let bestMatch = 0
+      words2.forEach(word2 => {
+        const similarity = calculateLevenshteinSimilarity(word1, word2)
+        if (similarity > bestMatch) {
+          bestMatch = similarity
+        }
+      })
+      totalSimilarity += bestMatch
+      comparisons++
+    })
+
+    return comparisons > 0 ? totalSimilarity / comparisons : 0
   }
 
   // Calcular similitud usando distancia de Levenshtein
