@@ -148,10 +148,10 @@
                   💬 Pronombres
                 </button>
                 <button
-                  @click="openModal('accusative')"
+                  @click="openModal('cases')"
                   class="flex items-center gap-2 hover:bg-purple-50 px-4 py-2 rounded-b-md w-full text-gray-700 hover:text-purple-600 text-sm text-left"
                 >
-                  📖 Acusativo
+                  📖 Casos
                 </button>
               </div>
             </div>
@@ -328,10 +328,10 @@
               💬 Pronombres
             </button>
             <button
-              @click="openModal('accusative')"
+              @click="openModal('cases')"
               class="block hover:bg-purple-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-purple-600 text-sm text-left"
             >
-              📖 Acusativo
+              📖 Casos
             </button>
           </div>
         </div>

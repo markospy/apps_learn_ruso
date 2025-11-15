@@ -90,45 +90,45 @@ export const usePronunciation = () => {
   const splitIntoSentences = (text: string): string[] => {
     if (!text.trim()) return []
 
-    // Primero dividir por saltos de línea para mantener párrafos
-    const paragraphs = text.split('\n').filter(p => p.trim())
+    // Reemplazar saltos de línea por espacios para procesar todo el texto como un bloque
+    const normalizedText = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
 
-    const allSentences: string[] = []
+    if (!normalizedText) return []
 
-    paragraphs.forEach(paragraph => {
-      // Dividir por puntos, signos de exclamación e interrogación
-      const sentences = paragraph
-        .split(/([.!?]+)/)
-        .filter(s => s.trim())
+    // Dividir por puntos, signos de exclamación e interrogación, manteniendo los signos
+    const parts = normalizedText.split(/([.!?]+)/)
 
-      let currentSentence = ''
+    const sentences: string[] = []
+    let currentSentence = ''
 
-      sentences.forEach((part, index) => {
-        // Si es un signo de puntuación
-        if (/^[.!?]+$/.test(part.trim())) {
-          currentSentence += part
-          if (currentSentence.trim()) {
-            allSentences.push(currentSentence.trim())
-            currentSentence = ''
-          }
-        } else {
-          // Es texto
-          currentSentence += part
+    parts.forEach((part) => {
+      const trimmedPart = part.trim()
+      if (!trimmedPart) return
+
+      // Si es un signo de puntuación
+      if (/^[.!?]+$/.test(trimmedPart)) {
+        currentSentence += trimmedPart
+        if (currentSentence.trim()) {
+          sentences.push(currentSentence.trim())
+          currentSentence = ''
         }
-      })
-
-      // Si queda texto sin signo de puntuación al final
-      if (currentSentence.trim()) {
-        allSentences.push(currentSentence.trim())
+      } else {
+        // Es texto
+        currentSentence += (currentSentence ? ' ' : '') + trimmedPart
       }
     })
 
-    // Si no se encontraron oraciones con puntuación, devolver párrafos
-    if (allSentences.length === 0) {
-      return paragraphs
+    // Si queda texto sin signo de puntuación al final
+    if (currentSentence.trim()) {
+      sentences.push(currentSentence.trim())
     }
 
-    return allSentences.filter(s => s.trim())
+    // Si no se encontraron oraciones con puntuación, devolver el texto completo
+    if (sentences.length === 0) {
+      return [normalizedText]
+    }
+
+    return sentences.filter(s => s.trim())
   }
 
   // Traducir texto usando API externa gratuita (MyMemory)
