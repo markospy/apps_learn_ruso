@@ -100,6 +100,56 @@
             >
               Grupos
             </NuxtLink>
+
+            <!-- Menú Gramática con submenús -->
+            <div class="relative" @mouseenter="showGramaticaMenu = true" @mouseleave="showGramaticaMenu = false">
+              <button
+                class="flex items-center gap-1 hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
+              >
+                Gramática
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <!-- Dropdown Gramática -->
+              <div
+                v-show="showGramaticaMenu"
+                class="left-0 z-50 absolute bg-white shadow-lg border border-gray-200 rounded-md w-56"
+              >
+                <button
+                  @click="openModal('conjugations')"
+                  class="flex items-center gap-2 hover:bg-blue-50 px-4 py-2 w-full text-gray-700 hover:text-blue-600 text-sm text-left"
+                >
+                  📋 Conjugaciones
+                </button>
+                <button
+                  @click="openModal('vowels')"
+                  class="flex items-center gap-2 hover:bg-green-50 px-4 py-2 w-full text-gray-700 hover:text-green-600 text-sm text-left"
+                >
+                  🔊 Vocales
+                </button>
+                <button
+                  @click="openModal('consonants')"
+                  class="flex items-center gap-2 hover:bg-indigo-50 px-4 py-2 w-full text-gray-700 hover:text-indigo-600 text-sm text-left"
+                >
+                  🎵 Consonantes
+                </button>
+                <button
+                  @click="openModal('gender')"
+                  class="flex items-center gap-2 hover:bg-pink-50 px-4 py-2 w-full text-gray-700 hover:text-pink-600 text-sm text-left"
+                >
+                  👥 Género
+                </button>
+                <button
+                  @click="openModal('pronouns')"
+                  class="flex items-center gap-2 hover:bg-teal-50 px-4 py-2 rounded-b-md w-full text-gray-700 hover:text-teal-600 text-sm text-left"
+                >
+                  💬 Pronombres
+                </button>
+              </div>
+            </div>
+
             <NuxtLink
               to="/pronunciation"
               class="hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
@@ -220,6 +270,60 @@
         >
           Grupos
         </NuxtLink>
+
+        <!-- Gramática Mobile -->
+        <div>
+          <button
+            @click="showGramaticaMobile = !showGramaticaMobile"
+            class="flex justify-between items-center hover:bg-gray-100 px-3 py-2 rounded-md w-full font-medium text-gray-700 hover:text-blue-600 text-base text-left"
+          >
+            Gramática
+            <svg
+              class="w-5 h-5 transition-transform"
+              :class="{ 'rotate-180': showGramaticaMobile }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Submenu Gramática Mobile -->
+          <div v-show="showGramaticaMobile" class="space-y-1 mt-1 ml-4">
+            <button
+              @click="openModal('conjugations')"
+              class="block hover:bg-blue-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-blue-600 text-sm text-left"
+            >
+              📋 Conjugaciones
+            </button>
+            <button
+              @click="openModal('vowels')"
+              class="block hover:bg-green-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-green-600 text-sm text-left"
+            >
+              🔊 Vocales
+            </button>
+            <button
+              @click="openModal('consonants')"
+              class="block hover:bg-indigo-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-indigo-600 text-sm text-left"
+            >
+              🎵 Consonantes
+            </button>
+            <button
+              @click="openModal('gender')"
+              class="block hover:bg-pink-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-pink-600 text-sm text-left"
+            >
+              👥 Género
+            </button>
+            <button
+              @click="openModal('pronouns')"
+              class="block hover:bg-teal-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-teal-600 text-sm text-left"
+            >
+              💬 Pronombres
+            </button>
+          </div>
+        </div>
+
         <NuxtLink
           to="/pronunciation"
           class="block hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-base"
@@ -234,6 +338,9 @@
     <main class="mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
       <slot />
     </main>
+
+    <!-- Componente HelpModals para proporcionar acceso a los modales -->
+    <HelpModals ref="helpModalsRef" />
   </div>
 </template>
 
@@ -244,11 +351,25 @@ const { user, logout } = useAuth()
 const showVocabularioMenu = ref(false)
 const showVerbosSubmenu = ref(false)
 const showNounsSubmenu = ref(false)
+const showGramaticaMenu = ref(false)
 
 // Estados para los menús desplegables (Mobile)
 const showVocabularioMobile = ref(false)
 const showVerbosMobile = ref(false)
 const showNounsMobile = ref(false)
+const showGramaticaMobile = ref(false)
+
+// Usar el composable para abrir los modales
+const { openModal: openGrammarModal } = useGrammarModals()
+
+const openModal = (modalType) => {
+  // Cerrar el menú móvil si está abierto
+  showGramaticaMobile.value = false
+  showGramaticaMenu.value = false
+
+  // Abrir el modal usando el composable
+  openGrammarModal(modalType)
+}
 
 const handleLogout = () => {
   logout()

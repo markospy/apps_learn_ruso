@@ -74,6 +74,7 @@
 							<strong>Nota:</strong> Si la raíz es dura (termina en т, д, к, п, м, etc.), se usa la vocal dura (у, е).Si la raíz es suave (termina en ч, ж, ш, щ o vocal), se usa la vocal suave (ю, ё).
 						</p>
 					</div>
+				</div>
 			</div>
 		</div>
 	</Teleport>
