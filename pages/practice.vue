@@ -36,74 +36,287 @@
         </div>
       </div>
 
+      <!-- Selector de tiempo verbal -->
+      <div class="bg-white shadow-md p-4 rounded-lg card">
+        <label class="block mb-2 font-semibold text-gray-700 text-lg">
+          Tiempo Verbal
+        </label>
+        <div class="gap-2 grid grid-cols-2 md:grid-cols-4">
+          <button
+            @click="selectedTense = 'present'"
+            :class="[
+              'px-4 py-2 rounded-lg font-medium transition-colors',
+              selectedTense === 'present'
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            ]"
+          >
+            Presente
+          </button>
+          <button
+            @click="selectedTense = 'past'"
+            :class="[
+              'px-4 py-2 rounded-lg font-medium transition-colors',
+              selectedTense === 'past'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            ]"
+          >
+            Pasado
+          </button>
+          <button
+            @click="selectedTense = 'future'"
+            :class="[
+              'px-4 py-2 rounded-lg font-medium transition-colors',
+              selectedTense === 'future'
+                ? 'bg-purple-500 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            ]"
+          >
+            Futuro
+          </button>
+          <button
+            @click="selectedTense = 'imperative'"
+            :class="[
+              'px-4 py-2 rounded-lg font-medium transition-colors',
+              selectedTense === 'imperative'
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            ]"
+          >
+            Imperativo
+          </button>
+        </div>
+      </div>
+
       <!-- Formulario de conjugaciones -->
       <div class="p-6 card">
         <div class="space-y-4">
-          <div
-            v-for="pronoun in Object.keys(PRONOUNS)"
-            :key="pronoun"
-            class="flex sm:flex-row flex-col items-center gap-3 p-4 rounded-lg transition-colors"
-            :class="{
-              'bg-green-50 border-2 border-green-300': checkedAnswers[pronoun] === true,
-              'bg-red-50 border-2 border-red-300': checkedAnswers[pronoun] === false,
-              'bg-gray-50': checkedAnswers[pronoun] === null
-            }"
-          >
-            <!-- Pronombre -->
-            <div class="flex-shrink-0 w-32 sm:text-left text-center">
-              <p class="font-bold text-gray-800 text-lg">{{ pronoun }}</p>
-              <p class="text-gray-600 text-sm">{{ getPronounTranslation(pronoun) }}</p>
-              <p class="text-gray-600 text-sm">{{ transliterateToSpanish(pronoun) }}</p>
-            </div>
-
-            <!-- Botón de audio -->
-            <button
-              @click="playPronunciation(pronoun)"
-              :disabled="!currentVerb"
-              class="flex flex-shrink-0 justify-center items-center bg-blue-100 hover:bg-blue-200 disabled:opacity-50 rounded-lg w-10 h-10 text-blue-600 transition-colors disabled:cursor-not-allowed"
-              title="Escuchar pronunciación"
-            >
-              <svg v-if="!isPlayingPronoun[pronoun]" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-
-            <!-- Input -->
-            <input
-              type="text"
-              v-model="userInputs[pronoun]"
-              :disabled="checkedAnswers[pronoun] !== null"
-              @keyup.enter="checkAnswer(pronoun)"
-              placeholder="Escribe la conjugación"
-              class="flex-grow conjugation-input"
+          <!-- Presente -->
+          <template v-if="selectedTense === 'present'">
+            <div
+              v-for="pronoun in Object.keys(PRONOUNS)"
+              :key="`present-${pronoun}`"
+              class="flex sm:flex-row flex-col items-center gap-3 p-4 rounded-lg transition-colors"
               :class="{
-                'correct': checkedAnswers[pronoun] === true,
-                'incorrect': checkedAnswers[pronoun] === false
+                'bg-green-50 border-2 border-green-300': checkedAnswers[`present-${pronoun}`] === true,
+                'bg-red-50 border-2 border-red-300': checkedAnswers[`present-${pronoun}`] === false,
+                'bg-gray-50': checkedAnswers[`present-${pronoun}`] === null
               }"
-            />
-
-            <!-- Botón verificar -->
-            <button
-              @click="checkAnswer(pronoun)"
-              :disabled="!currentVerb || checkedAnswers[pronoun] !== null || !userInputs[pronoun]?.trim()"
-              class="flex-shrink-0 px-6 py-2 btn-primary"
             >
-              {{ checkedAnswers[pronoun] === null ? 'Comprobar' : checkedAnswers[pronoun] ? '✓' : '✗' }}
-            </button>
-
-            <!-- Feedback -->
-            <div v-if="checkedAnswers[pronoun] !== null" class="flex-shrink-0 min-w-[200px]">
-              <p v-if="checkedAnswers[pronoun]" class="font-semibold text-green-600">
-                ¡Correcto!
-              </p>
-              <p v-else class="font-semibold text-red-600">
-                Correcto: <span class="font-bold">{{ conjugate(currentVerb, pronoun) }}</span>
-              </p>
+              <div class="flex-shrink-0 w-32 sm:text-left text-center">
+                <p class="font-bold text-gray-800 text-lg">{{ pronoun }}</p>
+                <p class="text-gray-600 text-sm">{{ getPronounTranslation(pronoun) }}</p>
+              </div>
+              <button
+                @click="playPronunciation(`present-${pronoun}`)"
+                :disabled="!currentVerb"
+                class="flex flex-shrink-0 justify-center items-center bg-blue-100 hover:bg-blue-200 disabled:opacity-50 rounded-lg w-10 h-10 text-blue-600 transition-colors disabled:cursor-not-allowed"
+                title="Escuchar pronunciación"
+              >
+                <svg v-if="!isPlayingPronoun[`present-${pronoun}`]" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <input
+                type="text"
+                v-model="userInputs[`present-${pronoun}`]"
+                :disabled="checkedAnswers[`present-${pronoun}`] !== null"
+                @keyup.enter="checkAnswer(`present-${pronoun}`)"
+                placeholder="Escribe la conjugación"
+                class="flex-grow conjugation-input"
+                :class="{
+                  'correct': checkedAnswers[`present-${pronoun}`] === true,
+                  'incorrect': checkedAnswers[`present-${pronoun}`] === false
+                }"
+              />
+              <button
+                @click="checkAnswer(`present-${pronoun}`)"
+                :disabled="!currentVerb || checkedAnswers[`present-${pronoun}`] !== null || !userInputs[`present-${pronoun}`]?.trim()"
+                class="flex-shrink-0 px-6 py-2 btn-primary"
+              >
+                {{ checkedAnswers[`present-${pronoun}`] === null ? 'Comprobar' : checkedAnswers[`present-${pronoun}`] ? '✓' : '✗' }}
+              </button>
+              <div v-if="checkedAnswers[`present-${pronoun}`] !== null" class="flex-shrink-0 min-w-[200px]">
+                <p v-if="checkedAnswers[`present-${pronoun}`]" class="font-semibold text-green-600">¡Correcto!</p>
+                <p v-else class="font-semibold text-red-600">
+                  Correcto: <span class="font-bold">{{ conjugate(`present-${pronoun}`) }}</span>
+                </p>
+              </div>
             </div>
-          </div>
+          </template>
+
+          <!-- Pasado -->
+          <template v-if="selectedTense === 'past'">
+            <div
+              v-for="gender in ['masculine', 'feminine', 'neuter', 'plural']"
+              :key="`past-${gender}`"
+              class="flex sm:flex-row flex-col items-center gap-3 p-4 rounded-lg transition-colors"
+              :class="{
+                'bg-green-50 border-2 border-green-300': checkedAnswers[`past-${gender}`] === true,
+                'bg-red-50 border-2 border-red-300': checkedAnswers[`past-${gender}`] === false,
+                'bg-gray-50': checkedAnswers[`past-${gender}`] === null
+              }"
+            >
+              <div class="flex-shrink-0 w-32 sm:text-left text-center">
+                <p class="font-bold text-gray-800 text-lg">{{ getGenderLabel(gender) }}</p>
+              </div>
+              <button
+                @click="playPronunciation(`past-${gender}`)"
+                :disabled="!currentVerb"
+                class="flex flex-shrink-0 justify-center items-center bg-blue-100 hover:bg-blue-200 disabled:opacity-50 rounded-lg w-10 h-10 text-blue-600 transition-colors disabled:cursor-not-allowed"
+                title="Escuchar pronunciación"
+              >
+                <svg v-if="!isPlayingPronoun[`past-${gender}`]" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <input
+                type="text"
+                v-model="userInputs[`past-${gender}`]"
+                :disabled="checkedAnswers[`past-${gender}`] !== null"
+                @keyup.enter="checkAnswer(`past-${gender}`)"
+                placeholder="Escribe la conjugación"
+                class="flex-grow conjugation-input"
+                :class="{
+                  'correct': checkedAnswers[`past-${gender}`] === true,
+                  'incorrect': checkedAnswers[`past-${gender}`] === false
+                }"
+              />
+              <button
+                @click="checkAnswer(`past-${gender}`)"
+                :disabled="!currentVerb || checkedAnswers[`past-${gender}`] !== null || !userInputs[`past-${gender}`]?.trim()"
+                class="flex-shrink-0 px-6 py-2 btn-primary"
+              >
+                {{ checkedAnswers[`past-${gender}`] === null ? 'Comprobar' : checkedAnswers[`past-${gender}`] ? '✓' : '✗' }}
+              </button>
+              <div v-if="checkedAnswers[`past-${gender}`] !== null" class="flex-shrink-0 min-w-[200px]">
+                <p v-if="checkedAnswers[`past-${gender}`]" class="font-semibold text-green-600">¡Correcto!</p>
+                <p v-else class="font-semibold text-red-600">
+                  Correcto: <span class="font-bold">{{ conjugate(`past-${gender}`) }}</span>
+                </p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Futuro -->
+          <template v-if="selectedTense === 'future'">
+            <div
+              v-for="pronoun in Object.keys(PRONOUNS)"
+              :key="`future-${pronoun}`"
+              class="flex sm:flex-row flex-col items-center gap-3 p-4 rounded-lg transition-colors"
+              :class="{
+                'bg-green-50 border-2 border-green-300': checkedAnswers[`future-${pronoun}`] === true,
+                'bg-red-50 border-2 border-red-300': checkedAnswers[`future-${pronoun}`] === false,
+                'bg-gray-50': checkedAnswers[`future-${pronoun}`] === null
+              }"
+            >
+              <div class="flex-shrink-0 w-32 sm:text-left text-center">
+                <p class="font-bold text-gray-800 text-lg">{{ pronoun }}</p>
+                <p class="text-gray-600 text-sm">{{ getPronounTranslation(pronoun) }}</p>
+              </div>
+              <button
+                @click="playPronunciation(`future-${pronoun}`)"
+                :disabled="!currentVerb"
+                class="flex flex-shrink-0 justify-center items-center bg-blue-100 hover:bg-blue-200 disabled:opacity-50 rounded-lg w-10 h-10 text-blue-600 transition-colors disabled:cursor-not-allowed"
+                title="Escuchar pronunciación"
+              >
+                <svg v-if="!isPlayingPronoun[`future-${pronoun}`]" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <input
+                type="text"
+                v-model="userInputs[`future-${pronoun}`]"
+                :disabled="checkedAnswers[`future-${pronoun}`] !== null"
+                @keyup.enter="checkAnswer(`future-${pronoun}`)"
+                placeholder="Escribe la conjugación"
+                class="flex-grow conjugation-input"
+                :class="{
+                  'correct': checkedAnswers[`future-${pronoun}`] === true,
+                  'incorrect': checkedAnswers[`future-${pronoun}`] === false
+                }"
+              />
+              <button
+                @click="checkAnswer(`future-${pronoun}`)"
+                :disabled="!currentVerb || checkedAnswers[`future-${pronoun}`] !== null || !userInputs[`future-${pronoun}`]?.trim()"
+                class="flex-shrink-0 px-6 py-2 btn-primary"
+              >
+                {{ checkedAnswers[`future-${pronoun}`] === null ? 'Comprobar' : checkedAnswers[`future-${pronoun}`] ? '✓' : '✗' }}
+              </button>
+              <div v-if="checkedAnswers[`future-${pronoun}`] !== null" class="flex-shrink-0 min-w-[200px]">
+                <p v-if="checkedAnswers[`future-${pronoun}`]" class="font-semibold text-green-600">¡Correcto!</p>
+                <p v-else class="font-semibold text-red-600">
+                  Correcto: <span class="font-bold">{{ conjugate(`future-${pronoun}`) }}</span>
+                </p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Imperativo -->
+          <template v-if="selectedTense === 'imperative'">
+            <div
+              v-for="form in ['singular', 'plural']"
+              :key="`imperative-${form}`"
+              class="flex sm:flex-row flex-col items-center gap-3 p-4 rounded-lg transition-colors"
+              :class="{
+                'bg-green-50 border-2 border-green-300': checkedAnswers[`imperative-${form}`] === true,
+                'bg-red-50 border-2 border-red-300': checkedAnswers[`imperative-${form}`] === false,
+                'bg-gray-50': checkedAnswers[`imperative-${form}`] === null
+              }"
+            >
+              <div class="flex-shrink-0 w-32 sm:text-left text-center">
+                <p class="font-bold text-gray-800 text-lg">{{ form === 'singular' ? 'Singular' : 'Plural' }}</p>
+              </div>
+              <button
+                @click="playPronunciation(`imperative-${form}`)"
+                :disabled="!currentVerb"
+                class="flex flex-shrink-0 justify-center items-center bg-blue-100 hover:bg-blue-200 disabled:opacity-50 rounded-lg w-10 h-10 text-blue-600 transition-colors disabled:cursor-not-allowed"
+                title="Escuchar pronunciación"
+              >
+                <svg v-if="!isPlayingPronoun[`imperative-${form}`]" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <input
+                type="text"
+                v-model="userInputs[`imperative-${form}`]"
+                :disabled="checkedAnswers[`imperative-${form}`] !== null"
+                @keyup.enter="checkAnswer(`imperative-${form}`)"
+                placeholder="Escribe la conjugación"
+                class="flex-grow conjugation-input"
+                :class="{
+                  'correct': checkedAnswers[`imperative-${form}`] === true,
+                  'incorrect': checkedAnswers[`imperative-${form}`] === false
+                }"
+              />
+              <button
+                @click="checkAnswer(`imperative-${form}`)"
+                :disabled="!currentVerb || checkedAnswers[`imperative-${form}`] !== null || !userInputs[`imperative-${form}`]?.trim()"
+                class="flex-shrink-0 px-6 py-2 btn-primary"
+              >
+                {{ checkedAnswers[`imperative-${form}`] === null ? 'Comprobar' : checkedAnswers[`imperative-${form}`] ? '✓' : '✗' }}
+              </button>
+              <div v-if="checkedAnswers[`imperative-${form}`] !== null" class="flex-shrink-0 min-w-[200px]">
+                <p v-if="checkedAnswers[`imperative-${form}`]" class="font-semibold text-green-600">¡Correcto!</p>
+                <p v-else class="font-semibold text-red-600">
+                  Correcto: <span class="font-bold">{{ conjugate(`imperative-${form}`) }}</span>
+                </p>
+              </div>
+            </div>
+          </template>
         </div>
 
         <!-- Botones de acción -->
@@ -140,20 +353,65 @@ const { speak, stop, transliterateToSpanish } = usePronunciation()
 
 // Estado local
 const currentVerb = ref(null)
+const selectedTense = ref('present')
 const userInputs = reactive({})
 const checkedAnswers = reactive({})
 const isPlayingPronoun = reactive({})
 
-// Inicializar inputs
-Object.keys(PRONOUNS).forEach(pronoun => {
-  userInputs[pronoun] = ''
-  checkedAnswers[pronoun] = null
-  isPlayingPronoun[pronoun] = false
-})
+// Inicializar todos los campos
+const initializeFields = () => {
+  try {
+    if (!PRONOUNS || !userInputs || !checkedAnswers || !isPlayingPronoun) {
+      console.warn('initializeFields: Algunos objetos no están disponibles', { PRONOUNS, userInputs, checkedAnswers, isPlayingPronoun })
+      return
+    }
+
+    // Presente
+    if (PRONOUNS && typeof PRONOUNS === 'object') {
+      Object.keys(PRONOUNS).forEach(pronoun => {
+        userInputs[`present-${pronoun}`] = ''
+        checkedAnswers[`present-${pronoun}`] = null
+        isPlayingPronoun[`present-${pronoun}`] = false
+      })
+    }
+
+    // Pasado
+    const pastGenders = ['masculine', 'feminine', 'neuter', 'plural']
+    pastGenders.forEach(gender => {
+      userInputs[`past-${gender}`] = ''
+      checkedAnswers[`past-${gender}`] = null
+      isPlayingPronoun[`past-${gender}`] = false
+    })
+
+    // Futuro
+    if (PRONOUNS && typeof PRONOUNS === 'object') {
+      Object.keys(PRONOUNS).forEach(pronoun => {
+        userInputs[`future-${pronoun}`] = ''
+        checkedAnswers[`future-${pronoun}`] = null
+        isPlayingPronoun[`future-${pronoun}`] = false
+      })
+    }
+
+    // Imperativo
+    const imperativeForms = ['singular', 'plural']
+    imperativeForms.forEach(form => {
+      userInputs[`imperative-${form}`] = ''
+      checkedAnswers[`imperative-${form}`] = null
+      isPlayingPronoun[`imperative-${form}`] = false
+    })
+  } catch (error) {
+    console.error('Error en initializeFields:', error)
+  }
+}
 
 // Cargar verbos al montar
 onMounted(async () => {
+  // Esperar un tick para asegurar que todo esté inicializado
+  await nextTick()
+  // Inicializar campos después de que PRONOUNS esté disponible
+  initializeFields()
   await fetchVerbs()
+  console.log(verbs.value)
   if (verbs.value.length > 0) {
     newVerb()
   }
@@ -169,51 +427,113 @@ const newVerb = () => {
 // Reiniciar práctica
 const resetPractice = () => {
   stop()
-  Object.keys(PRONOUNS).forEach(pronoun => {
-    userInputs[pronoun] = ''
-    checkedAnswers[pronoun] = null
-    isPlayingPronoun[pronoun] = false
-  })
+  initializeFields()
 }
 
-// Obtener la conjugación correcta según el pronombre
-const conjugate = (verb, pronoun) => {
-  if (!verb) return ''
+// Obtener etiqueta de género
+const getGenderLabel = (gender) => {
+  const labels = {
+    masculine: 'Masculino',
+    feminine: 'Femenino',
+    neuter: 'Neutro',
+    plural: 'Plural'
+  }
+  return labels[gender] || gender
+}
 
-  const pronounMap = {
-    'Я': verb.present_ya,
-    'Ты': verb.present_ty,
-    'Он/Она': verb.present_on_ona,
-    'Мы': verb.present_my,
-    'Вы': verb.present_vy,
-    'Они': verb.present_oni,
+// Obtener la conjugación correcta según el tiempo y campo
+const conjugate = (fieldKey) => {
+  if (!currentVerb.value) return ''
+
+  // Presente
+  if (fieldKey.startsWith('present-')) {
+    const pronoun = fieldKey.replace('present-', '')
+    const pronounMap = {
+      'Я': currentVerb.value.present_ya,
+      'Ты': currentVerb.value.present_ty,
+      'Он/Она': currentVerb.value.present_on_ona,
+      'Мы': currentVerb.value.present_my,
+      'Вы': currentVerb.value.present_vy,
+      'Они': currentVerb.value.present_oni,
+    }
+    return pronounMap[pronoun] || ''
   }
 
-  return pronounMap[pronoun] || ''
+  // Pasado
+  if (fieldKey.startsWith('past-')) {
+    const gender = fieldKey.replace('past-', '')
+    const genderMap = {
+      masculine: currentVerb.value.past_masculine,
+      feminine: currentVerb.value.past_feminine,
+      neuter: currentVerb.value.past_neuter,
+      plural: currentVerb.value.past_plural,
+    }
+    return genderMap[gender] || ''
+  }
+
+  // Futuro
+  if (fieldKey.startsWith('future-')) {
+    const pronoun = fieldKey.replace('future-', '')
+    const pronounMap = {
+      'Я': currentVerb.value.future_ya,
+      'Ты': currentVerb.value.future_ty,
+      'Он/Она': currentVerb.value.future_on_ona,
+      'Мы': currentVerb.value.future_my,
+      'Вы': currentVerb.value.future_vy,
+      'Они': currentVerb.value.future_oni,
+    }
+    return pronounMap[pronoun] || ''
+  }
+
+  // Imperativo
+  if (fieldKey.startsWith('imperative-')) {
+    const form = fieldKey.replace('imperative-', '')
+    const formMap = {
+      singular: currentVerb.value.imperative_singular,
+      plural: currentVerb.value.imperative_plural,
+    }
+    return formMap[form] || ''
+  }
+
+  return ''
 }
 
 // Verificar respuesta
-const checkAnswer = (pronoun) => {
-  if (!currentVerb.value || checkedAnswers[pronoun] !== null) return
+const checkAnswer = (fieldKey) => {
+  if (!currentVerb.value || checkedAnswers[fieldKey] !== null) return
 
-  const correctAnswer = conjugate(currentVerb.value, pronoun)
+  const correctAnswer = conjugate(fieldKey)
   if (!correctAnswer) return
 
-  checkedAnswers[pronoun] = checkConjugation(userInputs[pronoun], correctAnswer)
+  checkedAnswers[fieldKey] = checkConjugation(userInputs[fieldKey], correctAnswer)
 }
 
 // Reproducir pronunciación
-const playPronunciation = (pronoun) => {
+const playPronunciation = (fieldKey) => {
   if (!currentVerb.value) return
 
-  const conjugation = conjugate(currentVerb.value, pronoun)
+  const conjugation = conjugate(fieldKey)
   if (!conjugation) return
 
-  isPlayingPronoun[pronoun] = true
-  speak(pronoun + ' ' + conjugation)
+  isPlayingPronoun[fieldKey] = true
+
+  // Determinar el texto a pronunciar según el tipo de campo
+  let textToSpeak = conjugation
+  if (fieldKey.startsWith('present-') || fieldKey.startsWith('future-')) {
+    const pronoun = fieldKey.replace('present-', '').replace('future-', '')
+    textToSpeak = pronoun + ' ' + conjugation
+  } else if (fieldKey.startsWith('past-')) {
+    const gender = getGenderLabel(fieldKey.replace('past-', ''))
+    textToSpeak = conjugation
+  } else if (fieldKey.startsWith('imperative-')) {
+    const form = fieldKey.replace('imperative-', '') === 'singular' ? 'Singular' : 'Plural'
+    textToSpeak = conjugation
+  }
+
+  speak(textToSpeak)
 
   setTimeout(() => {
-    isPlayingPronoun[pronoun] = false
+    isPlayingPronoun[fieldKey] = false
   }, 1000)
 }
 </script>
