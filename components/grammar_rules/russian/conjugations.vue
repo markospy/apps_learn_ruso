@@ -1,4 +1,5 @@
 <template>
+	<Teleport to="body">
 		<!-- Modal de ayuda con tabla de conjugaciones -->
 		<div v-if="showModal" class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 p-4" @click.self="showModal = false">
 			<div class="bg-white shadow-xl rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -73,9 +74,9 @@
 							<strong>Nota:</strong> Si la raíz es dura (termina en т, д, к, п, м, etc.), se usa la vocal dura (у, е).Si la raíz es suave (termina en ч, ж, ш, щ o vocal), se usa la vocal suave (ю, ё).
 						</p>
 					</div>
-				</div>
 			</div>
 		</div>
+	</Teleport>
 </template>
 
 <script setup>

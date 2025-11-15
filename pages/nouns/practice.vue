@@ -200,6 +200,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Modales de ayuda -->
+    <HelpModals />
   </div>
 </template>
 

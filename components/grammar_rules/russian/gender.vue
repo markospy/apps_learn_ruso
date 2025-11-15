@@ -1,6 +1,7 @@
 <template>
-	<!-- Modal de ayuda con géneros de sustantivos -->
-	<div v-if="showModal" class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 p-4" @click.self="showModal = false">
+	<Teleport to="body">
+		<!-- Modal de ayuda con géneros de sustantivos -->
+		<div v-if="showModal" class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 p-4" @click.self="showModal = false">
 		<div class="bg-white shadow-xl rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
 			<div class="top-0 sticky flex justify-between items-center bg-white px-6 py-4 border-b">
 				<h3 class="font-bold text-gray-800 text-2xl">Género de Sustantivos</h3>
@@ -112,7 +113,7 @@
 				</div>
 			</div>
 		</div>
-	</div>
+	</Teleport>
 </template>
 
 <script setup>
