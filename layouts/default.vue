@@ -161,7 +161,7 @@
               class="hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
               active-class="text-blue-600 bg-blue-50"
             >
-              Pronunciación
+              Traducir/Oír
             </NuxtLink>
           </div>
 
@@ -341,7 +341,7 @@
           class="block hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-base"
           active-class="text-blue-600 bg-blue-50"
         >
-          Pronunciación
+          Traducir/Oír
         </NuxtLink>
       </div>
     </nav>

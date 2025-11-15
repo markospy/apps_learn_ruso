@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="mb-8">
-      <h1 class="mb-2 font-bold text-gray-800 text-4xl">Traductor de Pronunciación</h1>
-      <p class="text-gray-600">Escribe texto en ruso y escucha su pronunciación</p>
+      <h1 class="mb-2 font-bold text-gray-800 text-4xl">Traducir/Oír</h1>
+      <p class="text-gray-600">Escribe texto en ruso, tradúcelo y escucha su pronunciación</p>
     </div>
 
     <div class="p-6 card">
@@ -19,58 +19,39 @@
         ></textarea>
       </div>
 
-      <!-- Toggle modo de reproducción -->
-      <div class="flex justify-between items-center bg-gray-50 mb-6 p-4 rounded-lg">
-        <label class="flex items-center gap-3 cursor-pointer">
-          <span class="font-medium text-gray-700 text-sm">Modo de reproducción:</span>
-          <div class="inline-block relative w-14 h-7">
-            <input
-              type="checkbox"
-              v-model="playFullSentence"
-              class="sr-only peer"
-              id="playModeToggle"
-            />
-            <label
-              for="playModeToggle"
-              class="absolute inset-0 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors cursor-pointer"
-            >
-              <span
-                class="top-0.5 left-0.5 absolute bg-white rounded-full w-6 h-6 transition-transform peer-checked:translate-x-7"
-              ></span>
-            </label>
-          </div>
-          <span class="text-gray-600 text-sm">
-            {{ playFullSentence ? 'Oración completa' : 'Palabra individual' }}
-          </span>
-        </label>
-      </div>
-
-      <!-- Resultado con transliteración -->
+      <!-- Resultado con transliteración y traducción -->
       <div v-if="inputText.trim()" class="space-y-4">
-        <h3 class="mb-3 font-semibold text-gray-700 text-lg">Resultado:</h3>
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-semibold text-gray-700 text-lg">Resultado:</h3>
+          <p v-if="isTranslating" class="text-blue-600 text-sm italic">Traduciendo...</p>
+        </div>
 
+        <!-- Oraciones procesadas -->
         <div
-          v-for="(line, lineIndex) in processedLines"
-          :key="lineIndex"
+          v-for="(sentence, sentenceIndex) in processedSentences"
+          :key="sentenceIndex"
           class="pb-4 border-gray-200 border-b last:border-b-0"
         >
-          <!-- Línea completa clickeable -->
+          <!-- Oración completa clickeable -->
           <div
-            @click="playLine(line.original, lineIndex)"
+            @click="playLine(sentence.original, sentenceIndex)"
             class="group hover:bg-blue-50 p-4 rounded-lg transition-colors cursor-pointer"
           >
             <p class="mb-2 font-medium text-gray-800 group-hover:text-blue-600 text-xl">
-              {{ line.original || '(línea vacía)' }}
+              {{ sentence.original || '(oración vacía)' }}
             </p>
-            <p class="text-gray-500 text-sm italic">
-              {{ line.transliteration || '' }}
+            <p class="mb-2 text-gray-500 text-sm italic">
+              {{ sentence.transliteration || '' }}
+            </p>
+            <p v-if="sentence.translation" class="font-medium text-green-600 text-base">
+              {{ sentence.translation }}
             </p>
           </div>
 
           <!-- Palabras individuales -->
-          <div v-if="line.words && line.words.length > 0" class="flex flex-wrap gap-2 mt-3 px-4">
+          <div v-if="sentence.words && sentence.words.length > 0" class="flex flex-wrap gap-2 mt-3 px-4">
             <span
-              v-for="(word, wordIndex) in line.words"
+              v-for="(word, wordIndex) in sentence.words"
               :key="wordIndex"
               @click.stop="playWord(word.text)"
               class="bg-gray-100 hover:bg-blue-100 px-3 py-1 rounded text-sm transition-colors cursor-pointer"
@@ -102,14 +83,44 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { speak, processText } = usePronunciation()
+const { speak, processText, translateSentences } = usePronunciation()
 
 const inputText = ref('')
-const playFullSentence = ref(true)
+const processedSentences = ref([])
+const isTranslating = ref(false)
 
-// Procesar texto para mostrar transliteración
-const processedLines = computed(() => {
-  return processText(inputText.value)
+// Función para procesar y traducir texto con debounce
+let debounceTimer = null
+
+const processAndTranslate = async (text) => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+  }
+
+  debounceTimer = setTimeout(async () => {
+    if (!text.trim()) {
+      processedSentences.value = []
+      return
+    }
+
+    // Primero procesar transliteración (síncrono)
+    processedSentences.value = processText(text)
+
+    // Luego traducir automáticamente (asíncrono)
+    isTranslating.value = true
+    try {
+      processedSentences.value = await translateSentences(processedSentences.value, 'ru', 'es')
+    } catch (error) {
+      console.error('Error al traducir:', error)
+    } finally {
+      isTranslating.value = false
+    }
+  }, 1000) // Debounce de 1 segundo
+}
+
+// Procesar y traducir texto automáticamente
+watch(inputText, (newText) => {
+  processAndTranslate(newText)
 })
 
 // Reproducir línea completa
