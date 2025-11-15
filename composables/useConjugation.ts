@@ -35,29 +35,6 @@ export const useConjugation = () => {
     'Они': 'Ellos/Ellas'
   }
 
-  // Obtener la raíz del verbo
-  const getVerbRoot = (infinitive: string, type: number): string => {
-    infinitive = infinitive.trim()
-
-    if (type === 1) {
-      if (infinitive.endsWith('ать') || infinitive.endsWith('ять') || infinitive.endsWith('еть')) {
-        return infinitive.substring(0, infinitive.length - 3)
-      }
-      if (infinitive.endsWith('ть')) {
-        return infinitive.substring(0, infinitive.length - 2)
-      }
-    } else if (type === 2) {
-      if (infinitive.endsWith('ить')) {
-        return infinitive.substring(0, infinitive.length - 3)
-      }
-      if (infinitive.endsWith('ть')) {
-        return infinitive.substring(0, infinitive.length - 2)
-      }
-    }
-
-    return infinitive
-  }
-
   // Conjugar verbo
   const conjugate = (verb: any, pronoun: string): string => {
     const endings = verb.conjugationType === 1 ? ENDINGS_1 : ENDINGS_2
@@ -79,7 +56,6 @@ export const useConjugation = () => {
   return {
     PRONOUNS,
     PRONOUN_TRANSLATIONS,
-    getVerbRoot,
     conjugate,
     getPronounTranslation,
     checkAnswer,

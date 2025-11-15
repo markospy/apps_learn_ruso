@@ -78,6 +78,26 @@
           />
         </div>
 
+        <div>
+          <div v-if="loadingRoles">
+            <div class="border-gray-900 border-b-2 rounded-full w-5 h-5 animate-spin"></div>
+          </div>
+          <div v-else>
+            <label for="role" class="block mb-1 font-medium text-gray-700 text-sm">
+              Rol del usuario
+            </label>
+            <select
+              id="role"
+              v-model="userData.role"
+              class="input-field"
+            >
+              <option v-for="role in roles" :key="role.id" :value="role.id">
+                {{ role.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
         <button
           type="submit"
           :disabled="loading"
@@ -106,7 +126,7 @@ definePageMeta({
 
 const { register } = useAuth()
 const router = useRouter()
-
+const { roles, loading: loadingRoles, error: errorRoles, fetchRoles } = useRoles()
 const userData = reactive({
   name: '',
   email: '',
@@ -114,6 +134,10 @@ const userData = reactive({
   password: '',
   country: '',
   language: 'es',
+})
+
+onMounted(async () => {
+  await fetchRoles()
 })
 
 const loading = ref(false)
