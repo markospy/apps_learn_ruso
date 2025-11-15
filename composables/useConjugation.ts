@@ -8,24 +8,6 @@ export const useConjugation = () => {
     'Они': 6,
   }
 
-  const ENDINGS_1 = {
-    1: 'ю',
-    2: 'ешь',
-    3: 'ет',
-    4: 'ем',
-    5: 'ете',
-    6: 'ют'
-  }
-
-  const ENDINGS_2 = {
-    1: 'ю',
-    2: 'ишь',
-    3: 'ит',
-    4: 'им',
-    5: 'ите',
-    6: 'ят'
-  }
-
   const PRONOUN_TRANSLATIONS = {
     'Я': 'Yo',
     'Ты': 'Tú',
@@ -33,14 +15,6 @@ export const useConjugation = () => {
     'Мы': 'Nosotros',
     'Вы': 'Usted/Ustedes',
     'Они': 'Ellos/Ellas'
-  }
-
-  // Conjugar verbo
-  const conjugate = (verb: any, pronoun: string): string => {
-    const endings = verb.conjugationType === 1 ? ENDINGS_1 : ENDINGS_2
-    const pronounCode = PRONOUNS[pronoun as keyof typeof PRONOUNS]
-    const ending = endings[pronounCode as keyof typeof endings]
-    return verb.root + ending
   }
 
   // Obtener traducción del pronombre
@@ -56,7 +30,6 @@ export const useConjugation = () => {
   return {
     PRONOUNS,
     PRONOUN_TRANSLATIONS,
-    conjugate,
     getPronounTranslation,
     checkAnswer,
   }

@@ -53,6 +53,7 @@
             <div class="flex-shrink-0 w-32 sm:text-left text-center">
               <p class="font-bold text-gray-800 text-lg">{{ pronoun }}</p>
               <p class="text-gray-600 text-sm">{{ getPronounTranslation(pronoun) }}</p>
+              <p class="text-gray-600 text-sm">{{ transliterateToSpanish(pronoun) }}</p>
             </div>
 
             <!-- Botón de audio -->
@@ -134,8 +135,8 @@ definePageMeta({
 })
 
 const { verbs, loading, fetchVerbs, selectRandomVerb } = useVerbs()
-const { PRONOUNS, conjugate, getPronounTranslation, checkAnswer: checkConjugation } = useConjugation()
-const { speak, stop } = usePronunciation()
+const { PRONOUNS, getPronounTranslation, checkAnswer: checkConjugation } = useConjugation()
+const { speak, stop, transliterateToSpanish } = usePronunciation()
 
 // Estado local
 const currentVerb = ref(null)
@@ -175,11 +176,29 @@ const resetPractice = () => {
   })
 }
 
+// Obtener la conjugación correcta según el pronombre
+const conjugate = (verb, pronoun) => {
+  if (!verb) return ''
+
+  const pronounMap = {
+    'Я': verb.present_ya,
+    'Ты': verb.present_ty,
+    'Он/Она': verb.present_on_ona,
+    'Мы': verb.present_my,
+    'Вы': verb.present_vy,
+    'Они': verb.present_oni,
+  }
+
+  return pronounMap[pronoun] || ''
+}
+
 // Verificar respuesta
 const checkAnswer = (pronoun) => {
   if (!currentVerb.value || checkedAnswers[pronoun] !== null) return
 
   const correctAnswer = conjugate(currentVerb.value, pronoun)
+  if (!correctAnswer) return
+
   checkedAnswers[pronoun] = checkConjugation(userInputs[pronoun], correctAnswer)
 }
 
@@ -188,14 +207,14 @@ const playPronunciation = (pronoun) => {
   if (!currentVerb.value) return
 
   const conjugation = conjugate(currentVerb.value, pronoun)
-  const fullText = `${pronoun} ${conjugation}`
+  if (!conjugation) return
 
   isPlayingPronoun[pronoun] = true
-  speak(fullText)
+  speak(pronoun + ' ' + conjugation)
 
   setTimeout(() => {
     isPlayingPronoun[pronoun] = false
-  }, 2000)
+  }, 1000)
 }
 </script>
 
