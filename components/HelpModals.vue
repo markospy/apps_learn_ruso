@@ -6,6 +6,7 @@
     <GrammarRulesRussianGender ref="genderModalRef" />
     <GrammarRulesRussianPronouns ref="pronounsModalRef" />
     <GrammarRulesRussianConsonants ref="consonantsModalRef" />
+    <GrammarRulesRussianAccusative ref="accusativeModalRef" />
   </div>
 </template>
 
@@ -16,6 +17,7 @@ const vowelsModalRef = ref(null)
 const genderModalRef = ref(null)
 const pronounsModalRef = ref(null)
 const consonantsModalRef = ref(null)
+const accusativeModalRef = ref(null)
 
 // Obtener el estado global compartido
 const {
@@ -23,7 +25,8 @@ const {
   vowelsModal,
   genderModal,
   pronounsModal,
-  consonantsModal
+  consonantsModal,
+  accusativeModal
 } = useGrammarModals()
 
 // Asignar las referencias locales al estado global cuando el componente se monte
@@ -33,6 +36,7 @@ onMounted(() => {
   genderModal.value = genderModalRef.value
   pronounsModal.value = pronounsModalRef.value
   consonantsModal.value = consonantsModalRef.value
+  accusativeModal.value = accusativeModalRef.value
 })
 </script>
 

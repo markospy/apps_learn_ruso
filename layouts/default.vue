@@ -143,9 +143,15 @@
                 </button>
                 <button
                   @click="openModal('pronouns')"
-                  class="flex items-center gap-2 hover:bg-teal-50 px-4 py-2 rounded-b-md w-full text-gray-700 hover:text-teal-600 text-sm text-left"
+                  class="flex items-center gap-2 hover:bg-teal-50 px-4 py-2 w-full text-gray-700 hover:text-teal-600 text-sm text-left"
                 >
                   💬 Pronombres
+                </button>
+                <button
+                  @click="openModal('accusative')"
+                  class="flex items-center gap-2 hover:bg-purple-50 px-4 py-2 rounded-b-md w-full text-gray-700 hover:text-purple-600 text-sm text-left"
+                >
+                  📖 Acusativo
                 </button>
               </div>
             </div>
@@ -320,6 +326,12 @@
               class="block hover:bg-teal-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-teal-600 text-sm text-left"
             >
               💬 Pronombres
+            </button>
+            <button
+              @click="openModal('accusative')"
+              class="block hover:bg-purple-50 px-3 py-2 rounded-md w-full text-gray-600 hover:text-purple-600 text-sm text-left"
+            >
+              📖 Acusativo
             </button>
           </div>
         </div>

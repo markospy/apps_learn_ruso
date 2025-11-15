@@ -4,6 +4,7 @@ const vowelsModal = useState('grammarModals.vowels', () => null)
 const genderModal = useState('grammarModals.gender', () => null)
 const pronounsModal = useState('grammarModals.pronouns', () => null)
 const consonantsModal = useState('grammarModals.consonants', () => null)
+const accusativeModal = useState('grammarModals.accusative', () => null)
 
 export const useGrammarModals = () => {
   const openModal = (modalType: string) => {
@@ -24,6 +25,9 @@ export const useGrammarModals = () => {
         case 'pronouns':
           pronounsModal.value?.open()
           break
+        case 'accusative':
+          accusativeModal.value?.open()
+          break
       }
     })
   }
@@ -34,6 +38,7 @@ export const useGrammarModals = () => {
     genderModal,
     pronounsModal,
     consonantsModal,
+    accusativeModal,
     openModal
   }
 }
