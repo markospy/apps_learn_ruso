@@ -16,14 +16,15 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Aprende conjugaciones de verbos rusos de forma interactiva' }
       ],
       link: [
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' }
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
       ]
     }
   },
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000/api',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'http://localhost:8000/api',
     }
   },
 
