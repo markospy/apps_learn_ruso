@@ -10,22 +10,96 @@
             </NuxtLink>
           </div>
 
-          <!-- Navegación -->
-          <div class="hidden md:flex items-center space-x-4">
+          <!-- Navegación Desktop -->
+          <div class="hidden md:flex items-center space-x-1">
             <NuxtLink
               to="/practice"
               class="hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
               active-class="text-blue-600 bg-blue-50"
             >
-              Practicar
+              Práctica
             </NuxtLink>
-            <NuxtLink
-              to="/verbs"
-              class="hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
-              active-class="text-blue-600 bg-blue-50"
-            >
-              Verbos
-            </NuxtLink>
+
+            <!-- Menú Vocabulario con submenús -->
+            <div class="relative" @mouseenter="showVocabularioMenu = true" @mouseleave="showVocabularioMenu = false">
+              <button
+                class="flex items-center gap-1 hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
+              >
+                Vocabulario
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <!-- Dropdown Vocabulario -->
+              <div
+                v-show="showVocabularioMenu"
+                class="left-0 z-50 absolute bg-white shadow-lg border border-gray-200 rounded-md w-48"
+              >
+                <!-- Verbos submenu -->
+                <div class="relative" @mouseenter="showVerbosSubmenu = true" @mouseleave="showVerbosSubmenu = false">
+                  <button
+                    class="flex justify-between items-center hover:bg-gray-100 px-4 py-2 w-full text-gray-700 text-sm text-left"
+                  >
+                    📝 Verbos
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+
+                  <!-- Submenu Verbos -->
+                  <div
+                    v-show="showVerbosSubmenu"
+                    class="top-0 left-full absolute bg-white shadow-lg border border-gray-200 rounded-md w-40"
+                  >
+                    <NuxtLink
+                      to="/verbs"
+                      class="block hover:bg-blue-50 px-4 py-2 rounded-t-md text-gray-700 hover:text-blue-600 text-sm"
+                    >
+                      ➕ Agregar
+                    </NuxtLink>
+                    <NuxtLink
+                      to="/practice"
+                      class="block hover:bg-blue-50 px-4 py-2 rounded-b-md text-gray-700 hover:text-blue-600 text-sm"
+                    >
+                      🎯 Práctica
+                    </NuxtLink>
+                  </div>
+                </div>
+
+                <!-- Sustantivos submenu -->
+                <div class="relative" @mouseenter="showNounsSubmenu = true" @mouseleave="showNounsSubmenu = false">
+                  <button
+                    class="flex justify-between items-center hover:bg-gray-100 px-4 py-2 w-full text-gray-700 text-sm text-left"
+                  >
+                    📚 Sustantivos
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+
+                  <!-- Submenu Sustantivos -->
+                  <div
+                    v-show="showNounsSubmenu"
+                    class="top-0 left-full absolute bg-white shadow-lg border border-gray-200 rounded-md w-40"
+                  >
+                    <NuxtLink
+                      to="/nouns"
+                      class="block hover:bg-blue-50 px-4 py-2 rounded-t-md text-gray-700 hover:text-blue-600 text-sm"
+                    >
+                      ➕ Agregar
+                    </NuxtLink>
+                    <NuxtLink
+                      to="/nouns/practice"
+                      class="block hover:bg-blue-50 px-4 py-2 rounded-b-md text-gray-700 hover:text-blue-600 text-sm"
+                    >
+                      🎯 Práctica
+                    </NuxtLink>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <NuxtLink
               to="/groups"
               class="hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-sm transition-colors"
@@ -62,15 +136,97 @@
           class="block hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-base"
           active-class="text-blue-600 bg-blue-50"
         >
-          Practicar
+          Práctica
         </NuxtLink>
-        <NuxtLink
-          to="/verbs"
-          class="block hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-base"
-          active-class="text-blue-600 bg-blue-50"
-        >
-          Verbos
-        </NuxtLink>
+
+        <!-- Vocabulario Mobile -->
+        <div>
+          <button
+            @click="showVocabularioMobile = !showVocabularioMobile"
+            class="flex justify-between items-center hover:bg-gray-100 px-3 py-2 rounded-md w-full font-medium text-gray-700 hover:text-blue-600 text-base text-left"
+          >
+            Vocabulario
+            <svg
+              class="w-5 h-5 transition-transform"
+              :class="{ 'rotate-180': showVocabularioMobile }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Submenu Vocabulario Mobile -->
+          <div v-show="showVocabularioMobile" class="space-y-1 mt-1 ml-4">
+            <!-- Verbos -->
+            <div>
+              <button
+                @click="showVerbosMobile = !showVerbosMobile"
+                class="flex justify-between items-center hover:bg-gray-100 px-3 py-2 rounded-md w-full text-gray-600 text-sm text-left"
+              >
+                📝 Verbos
+                <svg
+                  class="w-4 h-4 transition-transform"
+                  :class="{ 'rotate-180': showVerbosMobile }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div v-show="showVerbosMobile" class="space-y-1 ml-4">
+                <NuxtLink
+                  to="/verbs"
+                  class="block hover:bg-blue-50 px-3 py-2 rounded-md text-gray-600 hover:text-blue-600 text-sm"
+                >
+                  ➕ Agregar
+                </NuxtLink>
+                <NuxtLink
+                  to="/practice"
+                  class="block hover:bg-blue-50 px-3 py-2 rounded-md text-gray-600 hover:text-blue-600 text-sm"
+                >
+                  🎯 Práctica
+                </NuxtLink>
+              </div>
+            </div>
+
+            <!-- Sustantivos -->
+            <div>
+              <button
+                @click="showNounsMobile = !showNounsMobile"
+                class="flex justify-between items-center hover:bg-gray-100 px-3 py-2 rounded-md w-full text-gray-600 text-sm text-left"
+              >
+                📚 Sustantivos
+                <svg
+                  class="w-4 h-4 transition-transform"
+                  :class="{ 'rotate-180': showNounsMobile }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div v-show="showNounsMobile" class="space-y-1 ml-4">
+                <NuxtLink
+                  to="/nouns"
+                  class="block hover:bg-blue-50 px-3 py-2 rounded-md text-gray-600 hover:text-blue-600 text-sm"
+                >
+                  ➕ Agregar
+                </NuxtLink>
+                <NuxtLink
+                  to="/nouns/practice"
+                  class="block hover:bg-blue-50 px-3 py-2 rounded-md text-gray-600 hover:text-blue-600 text-sm"
+                >
+                  🎯 Práctica
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <NuxtLink
           to="/groups"
           class="block hover:bg-gray-100 px-3 py-2 rounded-md font-medium text-gray-700 hover:text-blue-600 text-base"
@@ -97,6 +253,16 @@
 
 <script setup>
 const { user, logout } = useAuth()
+
+// Estados para los menús desplegables (Desktop)
+const showVocabularioMenu = ref(false)
+const showVerbosSubmenu = ref(false)
+const showNounsSubmenu = ref(false)
+
+// Estados para los menús desplegables (Mobile)
+const showVocabularioMobile = ref(false)
+const showVerbosMobile = ref(false)
+const showNounsMobile = ref(false)
 
 const handleLogout = () => {
   logout()
