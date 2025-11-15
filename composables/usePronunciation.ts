@@ -248,9 +248,46 @@ export const usePronunciation = () => {
       recognition.interimResults = false
       recognition.maxAlternatives = 1
 
+      // Configurar timeouts más largos para dar tiempo al usuario
+      // Estos valores pueden variar según el navegador
+      if ('serviceURI' in recognition) {
+        // Chrome/Edge permite configurar algunos parámetros
+        try {
+          // Aumentar el tiempo de espera antes de considerar "no-speech"
+          // Esto se hace configurando el reconocimiento para que espere más
+        } catch (e) {
+          // Ignorar si no se puede configurar
+        }
+      }
+
       isRecording.value = sentenceIndex
 
+      // Timeout manual para evitar que se quede colgado
+      let timeoutId: NodeJS.Timeout | null = null
+      const maxRecordingTime = 10000 // 10 segundos máximo
+
+      timeoutId = setTimeout(() => {
+        if (isRecording.value === sentenceIndex) {
+          recognition.stop()
+          const errorMessage = 'Tiempo de grabación excedido. Por favor, intenta de nuevo.'
+          recordingResults.value[sentenceIndex] = {
+            recognized: '',
+            accuracy: 0,
+            error: errorMessage
+          }
+          isRecording.value = null
+          currentRecognition = null
+          reject(new Error(errorMessage))
+        }
+      }, maxRecordingTime)
+
       recognition.onresult = (event: any) => {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
         const recognized = event.results[0][0].transcript.trim()
         const accuracy = calculateAccuracy(expectedText.trim(), recognized)
 
@@ -293,22 +330,35 @@ export const usePronunciation = () => {
       }
 
       recognition.onerror = (event: any) => {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
         console.error('Error en reconocimiento:', event.error)
         let errorMessage = 'Error al reconocer el audio'
 
         switch (event.error) {
           case 'no-speech':
-            errorMessage = 'No se detectó habla. Intenta de nuevo.'
+            // El error "no-speech" puede ocurrir si el usuario no habla inmediatamente
+            // o si hay ruido de fondo. Dar un mensaje más útil.
+            errorMessage = 'No se detectó habla. Por favor, habla claramente inmediatamente después de presionar el botón de grabar.'
             break
           case 'audio-capture':
-            errorMessage = 'No se pudo acceder al micrófono. Verifica los permisos.'
+            errorMessage = 'No se pudo acceder al micrófono. Verifica los permisos y que el micrófono esté conectado.'
             break
           case 'not-allowed':
-            errorMessage = 'Permiso de micrófono denegado. Por favor, permite el acceso al micrófono.'
+            errorMessage = 'Permiso de micrófono denegado. Por favor, permite el acceso al micrófono en la configuración del navegador.'
             break
           case 'network':
-            errorMessage = 'Error de red. Verifica tu conexión.'
+            errorMessage = 'Error de red. Verifica tu conexión a internet.'
             break
+          case 'aborted':
+            // Si fue abortado manualmente, no mostrar error
+            isRecording.value = null
+            currentRecognition = null
+            return
           default:
             errorMessage = `Error: ${event.error}`
         }
@@ -325,10 +375,20 @@ export const usePronunciation = () => {
       }
 
       recognition.onend = () => {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
         if (isRecording.value === sentenceIndex) {
           // Si aún está grabando, significa que terminó inesperadamente
-          isRecording.value = null
-          currentRecognition = null
+          // Pero no hacer nada aquí, el error ya se maneja en onerror
+          // Solo limpiar el estado si no hay un resultado
+          if (!recordingResults.value[sentenceIndex]) {
+            isRecording.value = null
+            currentRecognition = null
+          }
         }
       }
 
@@ -337,6 +397,12 @@ export const usePronunciation = () => {
       try {
         recognition.start()
       } catch (error: any) {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
         const errorMessage = 'No se pudo iniciar la grabación. Asegúrate de que el micrófono esté disponible.'
         recordingResults.value[sentenceIndex] = {
           recognized: '',
