@@ -2,21 +2,21 @@
 	<Teleport to="body">
 		<!-- Modal de casos gramaticales -->
 		<div v-if="showModal" class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 p-4" @click.self="showModal = false">
-			<div class="bg-white shadow-xl rounded-lg w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+			<div class="flex flex-col bg-white shadow-xl rounded-lg w-full max-w-6xl max-h-[95vh] overflow-hidden">
 				<!-- Encabezado y Selector de Casos (Fijo en la parte superior) -->
-				<div class="sticky top-0 z-10 bg-gray-800 p-4 shadow-lg flex-shrink-0">
+				<div class="top-0 z-10 sticky flex-shrink-0 bg-gray-800 shadow-lg p-4">
 					<div class="flex justify-between items-center mb-4">
 						<h3 class="font-extrabold text-yellow-400 text-3xl">Падежи (Los 6 Casos Rusos)</h3>
 						<button
 							@click="showModal = false"
-							class="text-gray-300 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-gray-700"
+							class="hover:bg-gray-700 p-2 rounded-full text-gray-300 hover:text-red-500 transition-colors"
 						>
 							<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 							</svg>
 						</button>
 					</div>
-					
+
 					<!-- Botones de Navegación de Casos -->
 					<div class="flex flex-wrap justify-center gap-2">
 						<button
@@ -25,8 +25,8 @@
 							@click="activeCase = c.id"
 							:class="[
 								'px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105',
-								activeCase === c.id 
-									? 'bg-blue-600 text-white shadow-xl' 
+								activeCase === c.id
+									? 'bg-blue-600 text-white shadow-xl'
 									: 'bg-gray-200 text-gray-700 hover:bg-gray-300'
 							]"
 						>
@@ -36,14 +36,14 @@
 				</div>
 
 				<!-- Contenido del Caso Activo (Scrollable) -->
-				<div class="p-6 overflow-y-auto flex-grow">
+				<div class="flex-grow p-6 overflow-y-auto">
 					<div v-for="c in cases" :key="c.id">
 						<div v-if="activeCase === c.id" class="space-y-6">
-							
+
 							<!-- Título del Caso y Palabras Clave -->
 							<div class="p-4 rounded-xl" :class="c.color">
-								<h4 class="font-bold text-2xl mb-2">{{ c.name_es }} ({{ c.name_ru }})</h4>
-								<p class="text-lg font-medium">
+								<h4 class="mb-2 font-bold text-2xl">{{ c.name_es }} ({{ c.name_ru }})</h4>
+								<p class="font-medium text-lg">
 									<span class="font-bold">Preguntas:</span> {{ c.questions }}
 									<span class="mx-3">|</span>
 									<span class="font-bold">Función Principal:</span> {{ c.function }}
@@ -52,25 +52,25 @@
 
 							<!-- Usos Detallados -->
 							<section>
-								<h5 class="font-bold text-xl text-gray-800 mb-3 border-b pb-1">Usos Comunes:</h5>
-								<ul class="list-disc ml-5 space-y-3 text-gray-700">
+								<h5 class="mb-3 pb-1 border-b font-bold text-gray-800 text-xl">Usos Comunes:</h5>
+								<ul class="space-y-3 ml-5 text-gray-700 list-disc">
 									<li v-for="(use, index) in c.uses" :key="index">
 										<span class="font-semibold">{{ use.title }}:</span> {{ use.description }}
-										<p class="mt-1 font-mono bg-gray-100 p-2 rounded text-sm italic border border-gray-200">{{ use.example }}</p>
+										<p class="bg-gray-100 mt-1 p-2 border border-gray-200 rounded font-mono text-sm italic">{{ use.example }}</p>
 									</li>
 								</ul>
 							</section>
 
 							<!-- Tabla de Terminaciones -->
 							<section>
-								<h5 class="font-bold text-xl text-gray-800 mb-3 border-b pb-1">Terminaciones Comunes de Sustantivos (Singular):</h5>
+								<h5 class="mb-3 pb-1 border-b font-bold text-gray-800 text-xl">Terminaciones Comunes de Sustantivos (Singular):</h5>
 								<div class="overflow-x-auto">
 									<table class="border border-gray-300 w-full text-sm border-collapse">
 										<thead>
 											<tr>
-												<th class="px-4 py-3 border border-gray-300 font-semibold text-white bg-gray-700 text-left">Género</th>
-												<th class="px-4 py-3 border border-gray-300 font-semibold text-white bg-gray-700 text-left">Terminación Nominativo</th>
-												<th class="px-4 py-3 border border-gray-300 font-semibold text-white bg-gray-700 text-left">Terminación {{ c.name_es }}</th>
+												<th class="bg-gray-700 px-4 py-3 border border-gray-300 font-semibold text-white text-left">Género</th>
+												<th class="bg-gray-700 px-4 py-3 border border-gray-300 font-semibold text-white text-left">Terminación Nominativo</th>
+												<th class="bg-gray-700 px-4 py-3 border border-gray-300 font-semibold text-white text-left">Terminación {{ c.name_es }}</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -83,7 +83,7 @@
 									</table>
 								</div>
 							</section>
-							
+
 						</div>
 					</div>
 				</div>
