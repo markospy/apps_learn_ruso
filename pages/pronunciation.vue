@@ -12,8 +12,8 @@
     </div>
 
     <div class="p-6 card">
-      <!-- Grid de 3 columnas: Input, Transliteración, Traducción -->
-      <div class="gap-4 grid grid-cols-3 mb-6">
+      <!-- Grid de 2 columnas: Input y Todo lo demás -->
+      <div class="gap-4 grid grid-cols-2 mb-6">
         <!-- Columna 1: Input (Texto en ruso) -->
         <div class="flex flex-col">
           <label class="block mb-2 font-medium text-gray-700 text-sm">
@@ -22,140 +22,154 @@
           <textarea
             v-model="inputText"
             placeholder="Escribe o pega texto en ruso aquí..."
-            class="flex-1 min-h-[400px] font-mono text-lg resize-none input-field"
-            rows="16"
+            class="flex-1 min-h-[600px] font-mono text-lg resize-none input-field"
+            rows="24"
           ></textarea>
         </div>
 
-        <!-- Columna 2: Transliteración -->
+        <!-- Columna 2: Transliteración, Escucha, Traducción, Grabación y Evaluación -->
         <div class="flex flex-col">
-          <label class="block mb-2 font-medium text-gray-700 text-sm">
-            Transliteración:
-          </label>
-          <div class="flex-1 bg-gray-50 p-4 border border-gray-300 rounded min-h-[400px] overflow-y-auto">
-            <div v-if="inputText.trim()" class="space-y-3">
+          <div class="flex-1 bg-gray-50 p-4 border border-gray-300 rounded min-h-[600px] overflow-y-auto">
+            <div v-if="inputText.trim()" class="space-y-4">
               <div
                 v-for="(sentence, sentenceIndex) in processedSentences"
                 :key="sentenceIndex"
-                class="pb-3 border-gray-200 border-b last:border-b-0"
+                class="pb-4 border-gray-200 border-b last:border-b-0"
               >
-                <div class="flex justify-between items-start gap-2 mb-1">
-                  <p
-                    @click="playLine(sentence.original, sentenceIndex)"
-                    class="flex-1 font-medium text-gray-800 hover:text-blue-600 text-base transition-colors cursor-pointer"
-                  >
-                    {{ sentence.original || '(oración vacía)' }}
-                  </p>
-                  <!-- Botón de micrófono para esta oración -->
-                  <button
-                    v-if="isRecording !== sentenceIndex"
-                    @click.stop="handleStartRecording(sentenceIndex, sentence.original)"
-                    :disabled="!isSpeechRecognitionSupported() || isRecording !== null || isRecordingFullText"
-                    class="flex-shrink-0 bg-red-500 hover:bg-red-600 disabled:opacity-50 p-1.5 rounded text-white transition-colors disabled:cursor-not-allowed"
-                    :title="!isSpeechRecognitionSupported() ? 'Tu navegador no soporta reconocimiento de voz' : (isRecordingFullText ? 'Hay una grabación del texto completo en curso' : 'Grabar pronunciación')"
-                  >
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                  <button
-                    v-else
-                    @click.stop="handleStopRecording"
-                    class="flex-shrink-0 bg-gray-600 hover:bg-gray-700 p-1.5 rounded text-white transition-colors"
-                    title="Detener grabación"
-                  >
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-                <p class="mb-2 text-gray-600 text-sm italic">
-                  {{ sentence.transliteration || '' }}
-                </p>
-                <!-- Palabras individuales clickeables -->
-                <div v-if="sentence.words && sentence.words.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-                  <span
-                    v-for="(word, wordIndex) in sentence.words"
-                    :key="wordIndex"
-                    @click.stop="playWord(word.text)"
-                    class="bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded text-xs transition-colors cursor-pointer"
-                    :title="word.transliteration"
-                  >
-                    {{ word.text }}
-                  </span>
-                </div>
-                <!-- Resultado de la evaluación -->
-                <div v-if="recordingResults[sentenceIndex]" class="mt-2 text-xs">
-                  <span
-                    :class="[
-                      'font-semibold',
-                      recordingResults[sentenceIndex].accuracy >= 80
-                        ? 'text-green-600'
-                        : recordingResults[sentenceIndex].accuracy >= 60
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
-                    ]"
-                  >
-                    Precisión: {{ recordingResults[sentenceIndex].accuracy }}%
-                  </span>
-                  <button
-                    @click.stop="clearRecordingResult(sentenceIndex)"
-                    class="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Limpiar resultado"
-                  >
-                    <svg class="inline w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div v-else class="flex justify-center items-center h-full text-gray-400 text-sm">
-              La transliteración aparecerá aquí
-            </div>
-          </div>
-        </div>
+                <!-- Oración original con botones de acción -->
+                <div class="mb-2">
+                  <div class="flex justify-between items-start gap-2 mb-2">
+                    <p
+                      @click="playLine(sentence.original, sentenceIndex)"
+                      class="flex-1 font-medium text-gray-800 hover:text-blue-600 text-lg transition-colors cursor-pointer"
+                    >
+                      {{ sentence.original || '(oración vacía)' }}
+                    </p>
+                    <!-- Botones de acción: Escuchar y Grabar -->
+                    <div class="flex flex-shrink-0 gap-2">
+                      <button
+                        @click.stop="playLine(sentence.original, sentenceIndex)"
+                        class="bg-blue-500 hover:bg-blue-600 p-1.5 rounded text-white transition-colors"
+                        title="Escuchar oración"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                      <button
+                        v-if="isRecording !== sentenceIndex"
+                        @click.stop="handleStartRecording(sentenceIndex, sentence.original)"
+                        :disabled="!isSpeechRecognitionSupported() || isRecording !== null || isRecordingFullText"
+                        class="bg-red-500 hover:bg-red-600 disabled:opacity-50 p-1.5 rounded text-white transition-colors disabled:cursor-not-allowed"
+                        :title="!isSpeechRecognitionSupported() ? 'Tu navegador no soporta reconocimiento de voz' : (isRecordingFullText ? 'Hay una grabación del texto completo en curso' : 'Grabar pronunciación')"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                      <button
+                        v-else
+                        @click.stop="handleStopRecording"
+                        class="bg-gray-600 hover:bg-gray-700 p-1.5 rounded text-white transition-colors"
+                        title="Detener grabación"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
 
-        <!-- Columna 3: Traducción al castellano -->
-        <div class="flex flex-col">
-          <label class="block mb-2 font-medium text-gray-700 text-sm">
-            Traducción al castellano:
-          </label>
-          <div class="flex-1 bg-gray-50 p-4 border border-gray-300 rounded min-h-[400px] overflow-y-auto">
-            <div v-if="isTranslating" class="flex justify-center items-center h-full">
-              <p class="text-blue-600 text-sm italic">Traduciendo...</p>
-            </div>
-            <div v-else-if="inputText.trim() && processedSentences.length > 0" class="space-y-3">
-              <div
-                v-for="(sentence, sentenceIndex) in processedSentences"
-                :key="sentenceIndex"
-                class="pb-3 border-gray-200 border-b last:border-b-0"
-              >
-                <p class="mb-1 font-medium text-gray-800 text-base">
-                  {{ sentence.original || '(oración vacía)' }}
-                </p>
-                <p v-if="sentence.translation" class="mb-2 text-green-600 text-base">
-                  {{ sentence.translation }}
-                </p>
-                <p v-else class="mb-2 text-gray-400 text-sm italic">
-                  Traduciendo...
-                </p>
+                  <!-- Indicador cuando está grabando -->
+                  <p v-if="isRecording === sentenceIndex" class="mb-2 text-blue-600 text-sm italic animate-pulse">
+                    🎤 Habla ahora... El sistema está escuchando
+                  </p>
+                </div>
+
+                <!-- Transliteración -->
+                <div class="mb-2">
+                  <p class="mb-1 font-medium text-gray-500 text-xs">Transliteración:</p>
+                  <p class="text-gray-600 text-sm italic">
+                    {{ sentence.transliteration || '' }}
+                  </p>
+                </div>
+
+                <!-- Traducción -->
+                <div class="mb-2">
+                  <p class="mb-1 font-medium text-gray-500 text-xs">Traducción:</p>
+                  <p v-if="sentence.translation" class="text-green-600 text-base">
+                    {{ sentence.translation }}
+                  </p>
+                  <p v-else class="text-gray-400 text-sm italic">
+                    Traduciendo...
+                  </p>
+                </div>
+
                 <!-- Palabras individuales clickeables -->
-                <div v-if="sentence.words && sentence.words.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-                  <span
-                    v-for="(word, wordIndex) in sentence.words"
-                    :key="wordIndex"
-                    @click.stop="playWord(word.text)"
-                    class="bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded text-xs transition-colors cursor-pointer"
-                    :title="word.transliteration"
-                  >
-                    {{ word.text }}
-                  </span>
+                <div v-if="sentence.words && sentence.words.length > 0" class="mb-2">
+                  <p class="mb-1 font-medium text-gray-500 text-xs">Palabras (click para escuchar):</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span
+                      v-for="(word, wordIndex) in sentence.words"
+                      :key="wordIndex"
+                      @click.stop="playWord(word.text)"
+                      class="bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded text-xs transition-colors cursor-pointer"
+                      :title="word.transliteration"
+                    >
+                      {{ word.text }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Resultado de la evaluación con texto reconocido -->
+                <div v-if="recordingResults[sentenceIndex]" class="bg-white mt-3 p-3 border border-gray-200 rounded">
+                  <div class="flex justify-between items-center mb-2">
+                    <span
+                      :class="[
+                        'font-semibold text-sm',
+                        recordingResults[sentenceIndex].accuracy >= 80
+                          ? 'text-green-600'
+                          : recordingResults[sentenceIndex].accuracy >= 60
+                            ? 'text-yellow-600'
+                            : 'text-red-600'
+                      ]"
+                    >
+                      Precisión: {{ recordingResults[sentenceIndex].accuracy }}%
+                    </span>
+                    <button
+                      @click.stop="clearRecordingResult(sentenceIndex)"
+                      class="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Limpiar resultado"
+                    >
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div v-if="recordingResults[sentenceIndex].error" class="text-red-600 text-sm italic">
+                    {{ recordingResults[sentenceIndex].error }}
+                  </div>
+
+                  <div v-else-if="recordingResults[sentenceIndex].recognized" class="space-y-2">
+                    <div>
+                      <p class="mb-1 font-medium text-gray-500 text-xs">Lo que se entendió del audio:</p>
+                      <p class="bg-gray-50 p-2 border border-gray-200 rounded text-gray-800 text-sm italic">
+                        "{{ recordingResults[sentenceIndex].recognized }}"
+                      </p>
+                    </div>
+                    <div>
+                      <p class="mb-1 font-medium text-gray-500 text-xs">Texto esperado:</p>
+                      <p class="bg-gray-50 p-2 rounded text-gray-600 text-sm">
+                        "{{ sentence.original }}"
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             <div v-else class="flex justify-center items-center h-full text-gray-400 text-sm">
-              La traducción aparecerá aquí
+              Escribe texto en ruso para ver la transliteración, traducción y opciones de grabación
             </div>
           </div>
         </div>
