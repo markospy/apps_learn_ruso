@@ -9,7 +9,16 @@ export const useAuth = () => {
   const login = async (credentials: { username: string; password: string }) => {
     const api = createApiClient()
     try {
-      const { data } = await api.post('/auth/login', credentials)
+      // Enviar como form-urlencoded según los requerimientos de la API
+      const formData = new URLSearchParams()
+      formData.append('username', credentials.username)
+      formData.append('password', credentials.password)
+
+      const { data } = await api.post('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
       authToken.value = data.access_token
       user.value = data.user
       return { success: true, user: data.user }

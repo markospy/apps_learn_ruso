@@ -13,10 +13,10 @@
     <!-- Sin verbos -->
     <div v-else-if="verbs.length === 0" class="p-8 text-center card">
       <div class="text-gray-500">
-        <p class="mb-4 text-xl">Aún no tienes verbos para practicar</p>
-        <p class="mb-6">Ve a la sección de Verbos para agregar algunos</p>
+        <p class="mb-4 text-xl">Aún no hay verbos disponibles para practicar</p>
+        <p class="mb-6">Los verbos se cargan desde la API</p>
         <NuxtLink to="/verbs" class="inline-block btn-primary">
-          Ir a Verbos
+          Ver Verbos
         </NuxtLink>
       </div>
     </div>
@@ -28,7 +28,7 @@
         <div class="text-center">
           <p class="mb-2 text-gray-600 text-lg">Conjuga el verbo:</p>
           <p class="mb-2 font-extrabold text-blue-700 text-5xl">
-            {{ currentVerb?.infinitive || '...' }}
+            {{ currentVerb?.imperfective?.infinitive?.word?.word || '...' }}
           </p>
           <p class="text-gray-500">
             Conjugación {{ currentVerb?.conjugationType }}
@@ -445,54 +445,51 @@ const getGenderLabel = (gender) => {
 const conjugate = (fieldKey) => {
   if (!currentVerb.value) return ''
 
-  // Presente
+  // Presente (imperfective)
   if (fieldKey.startsWith('present-')) {
     const pronoun = fieldKey.replace('present-', '')
     const pronounMap = {
-      'Я': currentVerb.value.present_ya,
-      'Ты': currentVerb.value.present_ty,
-      'Он/Она': currentVerb.value.present_on_ona,
-      'Мы': currentVerb.value.present_my,
-      'Вы': currentVerb.value.present_vy,
-      'Они': currentVerb.value.present_oni,
+      'Я': currentVerb.value.imperfective?.present_tense?.ya?.word,
+      'Ты': currentVerb.value.imperfective?.present_tense?.ty?.word,
+      'Он/Она': currentVerb.value.imperfective?.present_tense?.on_ona?.word,
+      'Мы': currentVerb.value.imperfective?.present_tense?.my?.word,
+      'Вы': currentVerb.value.imperfective?.present_tense?.vy?.word,
+      'Они': currentVerb.value.imperfective?.present_tense?.oni?.word,
     }
     return pronounMap[pronoun] || ''
   }
 
-  // Pasado
+  // Pasado (imperfective)
   if (fieldKey.startsWith('past-')) {
     const gender = fieldKey.replace('past-', '')
     const genderMap = {
-      masculine: currentVerb.value.past_masculine,
-      feminine: currentVerb.value.past_feminine,
-      neuter: currentVerb.value.past_neuter,
-      plural: currentVerb.value.past_plural,
+      masculine: currentVerb.value.imperfective?.past_tense?.masculine?.word,
+      feminine: currentVerb.value.imperfective?.past_tense?.feminine?.word,
+      neuter: currentVerb.value.imperfective?.past_tense?.neuter?.word,
+      plural: currentVerb.value.imperfective?.past_tense?.plural?.word,
     }
     return genderMap[gender] || ''
   }
 
-  // Futuro
+  // Futuro (perfective - future_simple)
   if (fieldKey.startsWith('future-')) {
     const pronoun = fieldKey.replace('future-', '')
     const pronounMap = {
-      'Я': currentVerb.value.future_ya,
-      'Ты': currentVerb.value.future_ty,
-      'Он/Она': currentVerb.value.future_on_ona,
-      'Мы': currentVerb.value.future_my,
-      'Вы': currentVerb.value.future_vy,
-      'Они': currentVerb.value.future_oni,
+      'Я': currentVerb.value.perfective?.future_simple?.ya?.word,
+      'Ты': currentVerb.value.perfective?.future_simple?.ty?.word,
+      'Он/Она': currentVerb.value.perfective?.future_simple?.on_ona?.word,
+      'Мы': currentVerb.value.perfective?.future_simple?.my?.word,
+      'Вы': currentVerb.value.perfective?.future_simple?.vy?.word,
+      'Они': currentVerb.value.perfective?.future_simple?.oni?.word,
     }
     return pronounMap[pronoun] || ''
   }
 
-  // Imperativo
+  // Imperativo - Nota: La nueva estructura de la API no incluye imperativo directamente
+  // Por ahora retornamos vacío, pero esto podría necesitar ajustes según la API
   if (fieldKey.startsWith('imperative-')) {
-    const form = fieldKey.replace('imperative-', '')
-    const formMap = {
-      singular: currentVerb.value.imperative_singular,
-      plural: currentVerb.value.imperative_plural,
-    }
-    return formMap[form] || ''
+    // TODO: Verificar si la API incluye imperativo en alguna parte
+    return ''
   }
 
   return ''

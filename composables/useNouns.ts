@@ -7,13 +7,16 @@ export const useNouns = () => {
   const api = createApiClient()
 
   // Obtener todos los sustantivos
-  const fetchNouns = async () => {
+  const fetchNouns = async (page: number = 1, perPage: number = 100) => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get('/nouns')
-      nouns.value = data
-      return data
+      const { data } = await api.get('/nouns', {
+        params: { page, per_page: perPage }
+      })
+      // La API ahora devuelve un objeto con items, total, page, per_page, total_pages
+      nouns.value = data.items || []
+      return data.items || []
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Error al cargar sustantivos'
       console.error('Fetch nouns error:', err)
@@ -39,59 +42,7 @@ export const useNouns = () => {
     }
   }
 
-  // Crear un sustantivo
-  const createNoun = async (nounData: any) => {
-    loading.value = true
-    error.value = null
-    try {
-      const { data } = await api.post('/nouns', nounData)
-      nouns.value.push(data)
-      return { success: true, data }
-    } catch (err: any) {
-      error.value = err.response?.data?.detail || 'Error al crear sustantivo'
-      console.error('Create noun error:', err)
-      return { success: false, error: error.value }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Actualizar un sustantivo
-  const updateNoun = async (id: number, nounData: any) => {
-    loading.value = true
-    error.value = null
-    try {
-      const { data } = await api.put(`/nouns/${id}`, nounData)
-      const index = nouns.value.findIndex((n: any) => n.id === id)
-      if (index !== -1) {
-        nouns.value[index] = data
-      }
-      return { success: true, data }
-    } catch (err: any) {
-      error.value = err.response?.data?.detail || 'Error al actualizar sustantivo'
-      console.error('Update noun error:', err)
-      return { success: false, error: error.value }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Eliminar un sustantivo
-  const deleteNoun = async (id: number) => {
-    loading.value = true
-    error.value = null
-    try {
-      await api.delete(`/nouns/${id}`)
-      nouns.value = nouns.value.filter((n: any) => n.id !== id)
-      return { success: true }
-    } catch (err: any) {
-      error.value = err.response?.data?.detail || 'Error al eliminar sustantivo'
-      console.error('Delete noun error:', err)
-      return { success: false, error: error.value }
-    } finally {
-      loading.value = false
-    }
-  }
+  // Nota: Los endpoints para crear, actualizar y eliminar sustantivos fueron eliminados de la API
 
   // Seleccionar un sustantivo aleatorio para práctica
   const selectRandomNoun = () => {
@@ -111,9 +62,6 @@ export const useNouns = () => {
     error,
     fetchNouns,
     fetchNoun,
-    createNoun,
-    updateNoun,
-    deleteNoun,
     selectRandomNoun,
   }
 }

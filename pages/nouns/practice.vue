@@ -13,10 +13,10 @@
     <!-- Sin sustantivos -->
     <div v-else-if="nouns.length === 0" class="p-8 text-center card">
       <div class="text-gray-500">
-        <p class="mb-4 text-xl">Aún no tienes sustantivos para practicar</p>
-        <p class="mb-6">Ve a la sección de Sustantivos para agregar algunos</p>
+        <p class="mb-4 text-xl">Aún no hay sustantivos disponibles para practicar</p>
+        <p class="mb-6">Los sustantivos se cargan desde la API</p>
         <NuxtLink to="/nouns" class="inline-block btn-primary">
-          Ir a Sustantivos
+          Ver Sustantivos
         </NuxtLink>
       </div>
     </div>
@@ -67,10 +67,11 @@
             {{ currentNoun?.noun || '...' }}
           </p>
           <p v-if="practiceMode === 'gender'" class="text-gray-500 text-sm">
-            Singular: {{ currentNoun?.singular }} | Plural: {{ currentNoun?.plural }}
+            Singular: {{ currentNoun?.declension?.singular?.nominative?.word || 'N/A' }} |
+            Plural: {{ currentNoun?.declension?.plural?.nominative?.word || 'N/A' }}
           </p>
           <p v-else class="text-gray-500 text-sm">
-            Singular: {{ currentNoun?.singular }}
+            Singular: {{ currentNoun?.declension?.singular?.nominative?.word || 'N/A' }}
           </p>
         </div>
       </div>
@@ -160,7 +161,7 @@
               {{ isCorrectPlural ? '¡Correcto! ✓' : '✗ Incorrecto' }}
             </p>
             <p class="mt-2 text-gray-700" v-if="!isCorrectPlural">
-              El plural correcto es: <strong>{{ currentNoun?.plural }}</strong>
+              El plural correcto es: <strong>{{ currentNoun?.declension?.plural?.nominative?.word || 'N/A' }}</strong>
             </p>
           </div>
         </div>
@@ -274,8 +275,9 @@ const checkGender = (gender) => {
 const checkPlural = () => {
   if (answeredPlural.value || !currentNoun.value || !userPluralInput.value.trim()) return
 
+  const correctPlural = currentNoun.value.declension?.plural?.nominative?.word || ''
   answeredPlural.value = true
-  isCorrectPlural.value = checkConjugation(userPluralInput.value.trim(), currentNoun.value.plural)
+  isCorrectPlural.value = checkConjugation(userPluralInput.value.trim(), correctPlural)
 
   if (isCorrectPlural.value) {
     stats.correct++
