@@ -8,6 +8,7 @@ export const usePronunciation = () => {
   const fullTextRecordingResult = ref<{ recognized: string, accuracy: number, error?: string } | null>(null)
   let currentUtterance: SpeechSynthesisUtterance | null = null
   let currentRecognition: any = null
+  let fullTextRecognitionResults: string[] = [] // Para acumular resultados en modo continuo
 
   // Transliterar texto ruso a español
   const transliterateToSpanish = (text: string): string => {
@@ -670,16 +671,30 @@ export const usePronunciation = () => {
       const recognition = new SpeechRecognition()
 
       recognition.lang = 'ru-RU'
-      recognition.continuous = false
-      recognition.interimResults = false
+      recognition.continuous = true // Modo continuo para permitir pausas
+      recognition.interimResults = true // Mostrar resultados intermedios
       recognition.maxAlternatives = 1
 
       isRecordingFullText.value = true
       fullTextRecordingResult.value = null
+      fullTextRecognitionResults = [] // Reiniciar acumulador
 
       // Timeout manual para evitar que se quede colgado
       let timeoutId: NodeJS.Timeout | null = null
-      const maxRecordingTime = 30000 // 30 segundos máximo para texto completo
+      const maxRecordingTime = 60000 // 60 segundos máximo para texto completo
+
+      // Reiniciar timeout cada vez que hay actividad
+      const resetTimeout = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
+        timeoutId = setTimeout(() => {
+          if (isRecordingFullText.value) {
+            // Si no hay actividad por 5 segundos, detener automáticamente
+            recognition.stop()
+          }
+        }, 5000) // 5 segundos de inactividad antes de detener
+      }
 
       timeoutId = setTimeout(() => {
         if (isRecordingFullText.value) {
@@ -692,34 +707,38 @@ export const usePronunciation = () => {
           }
           isRecordingFullText.value = false
           currentRecognition = null
+          fullTextRecognitionResults = []
           reject(new Error(errorMessage))
         }
       }, maxRecordingTime)
 
       recognition.onresult = (event: any) => {
-        // Limpiar timeout si existe
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-          timeoutId = null
+        // Reiniciar timeout de inactividad
+        resetTimeout()
+
+        // Acumular todos los resultados (no solo el final)
+        const results: string[] = []
+        for (let i = 0; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript.trim()
+          if (transcript && !event.results[i].isFinal) {
+            // Resultados intermedios - actualizar en tiempo real
+            results.push(transcript)
+          } else if (transcript && event.results[i].isFinal) {
+            // Resultados finales - agregar al acumulador
+            results.push(transcript)
+            if (!fullTextRecognitionResults.includes(transcript)) {
+              fullTextRecognitionResults.push(transcript)
+            }
+          }
         }
 
-        const recognized = event.results[0][0].transcript.trim()
-        const accuracy = calculateAccuracy(fullText.trim(), recognized)
+        // Si hay resultados finales, procesarlos
+        if (fullTextRecognitionResults.length > 0) {
+          const recognized = fullTextRecognitionResults.join(' ').trim()
 
-        console.log('Evaluación de pronunciación (texto completo):', {
-          esperado: fullText.trim(),
-          reconocido: recognized,
-          precisión: accuracy
-        })
-
-        fullTextRecordingResult.value = {
-          recognized,
-          accuracy
+          // Actualizar resultado en tiempo real (solo para mostrar progreso)
+          // No calcular accuracy hasta que el usuario detenga la grabación
         }
-
-        isRecordingFullText.value = false
-        currentRecognition = null
-        resolve()
       }
 
       recognition.onerror = (event: any) => {
@@ -773,11 +792,33 @@ export const usePronunciation = () => {
         }
 
         if (isRecordingFullText.value) {
-          // Si aún está grabando, significa que terminó inesperadamente
-          // Solo limpiar el estado si no hay un resultado
-          if (!fullTextRecordingResult.value) {
+          // Procesar todos los resultados acumulados
+          if (fullTextRecognitionResults.length > 0) {
+            const recognized = fullTextRecognitionResults.join(' ').trim()
+            const accuracy = calculateAccuracy(fullText.trim(), recognized)
+
+            console.log('Evaluación de pronunciación (texto completo):', {
+              esperado: fullText.trim(),
+              reconocido: recognized,
+              precisión: accuracy
+            })
+
+            fullTextRecordingResult.value = {
+              recognized,
+              accuracy
+            }
+
             isRecordingFullText.value = false
             currentRecognition = null
+            fullTextRecognitionResults = []
+            resolve()
+          } else {
+            // Si no hay resultados, significa que terminó inesperadamente
+            if (!fullTextRecordingResult.value) {
+              isRecordingFullText.value = false
+              currentRecognition = null
+              fullTextRecognitionResults = []
+            }
           }
         }
       }
@@ -810,8 +851,8 @@ export const usePronunciation = () => {
   const stopRecordingFullText = () => {
     if (currentRecognition && isRecordingFullText.value) {
       currentRecognition.stop()
-      currentRecognition = null
-      isRecordingFullText.value = false
+      // El resultado se procesará en onend
+      // No limpiar el estado aquí, dejar que onend lo maneje
     }
   }
 

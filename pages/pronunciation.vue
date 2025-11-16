@@ -28,7 +28,19 @@
       <!-- Resultado con transliteración y traducción -->
       <div v-if="inputText.trim()" class="space-y-4">
         <div class="flex justify-between items-center mb-3">
-          <h3 class="font-semibold text-gray-700 text-lg">Resultado:</h3>
+          <div class="flex items-center gap-3">
+            <!-- Botón para escuchar el texto completo -->
+            <button
+              @click="playFullText(inputText.trim())"
+              class="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded text-white text-sm transition-colors"
+              title="Escuchar texto completo"
+            >
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              <span>Escuchar texto</span>
+            </button>
+          </div>
           <div class="flex items-center gap-3">
             <p v-if="isTranslating" class="text-blue-600 text-sm italic">Traduciendo...</p>
 
@@ -81,7 +93,7 @@
             </button>
           </div>
 
-          <div class="space-y-2">
+          <div class="space-y-3">
             <div class="flex items-center gap-2">
               <span
                 :class="[
@@ -101,13 +113,50 @@
               {{ fullTextRecordingResult.error }}
             </div>
 
-            <div v-else-if="fullTextRecordingResult.recognized" class="space-y-1">
-              <p class="text-gray-600 text-sm">
-                <span class="font-medium">Reconocido:</span> "{{ fullTextRecordingResult.recognized }}"
-              </p>
-              <p class="text-gray-600 text-sm">
-                <span class="font-medium">Esperado:</span> "{{ inputText.trim() }}"
-              </p>
+            <div v-else-if="fullTextRecordingResult.recognized" class="space-y-3">
+              <!-- Texto esperado con botón de reproducir -->
+              <div class="flex items-end gap-2">
+                <div class="flex-1">
+                  <p class="mb-1 text-gray-600 text-sm">
+                    <span class="font-medium">Esperado:</span>
+                  </p>
+                  <p class="bg-white p-2 border border-gray-200 rounded text-gray-800 text-base">
+                    "{{ inputText.trim() }}"
+                  </p>
+                </div>
+                <button
+                  @click="playFullText(inputText.trim())"
+                  class="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded text-white text-sm transition-colors"
+                  title="Escuchar texto esperado"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Escuchar</span>
+                </button>
+              </div>
+
+              <!-- Texto reconocido con botón de reproducir -->
+              <div class="flex items-end gap-2">
+                <div class="flex-1">
+                  <p class="mb-1 text-gray-600 text-sm">
+                    <span class="font-medium">Reconocido:</span>
+                  </p>
+                  <p class="bg-white p-2 border border-gray-200 rounded text-gray-800 text-base">
+                    "{{ fullTextRecordingResult.recognized }}"
+                  </p>
+                </div>
+                <button
+                  @click="playFullText(fullTextRecordingResult.recognized)"
+                  class="flex items-center gap-1 bg-green-500 hover:bg-green-600 px-3 py-2 rounded text-white text-sm transition-colors"
+                  title="Escuchar tu grabación"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Escuchar</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -305,6 +354,12 @@ const playLine = (text, lineIndex) => {
 const playWord = (word) => {
   if (!word || !word.trim()) return
   speak(word)
+}
+
+// Reproducir texto completo
+const playFullText = (text) => {
+  if (!text || !text.trim()) return
+  speak(text)
 }
 
 // Manejar inicio de grabación
