@@ -15,16 +15,61 @@
       <!-- Grid de 2 columnas: Input y Todo lo demás -->
       <div class="gap-4 grid grid-cols-2 mb-6">
         <!-- Columna 1: Input (Texto en ruso) -->
-        <div class="flex flex-col">
-          <label class="block mb-2 font-medium text-gray-700 text-sm">
-            Texto en ruso:
-          </label>
-          <textarea
-            v-model="inputText"
-            placeholder="Escribe o pega texto en ruso aquí..."
-            class="flex-1 min-h-[600px] font-mono text-lg resize-none input-field"
-            rows="24"
-          ></textarea>
+        <div class="relative flex flex-col">
+          <div class="relative">
+            <textarea
+              v-model="inputText"
+              placeholder="Escribe o pega texto en ruso aquí..."
+              class="flex-1 pr-32 min-h-[600px] font-mono text-lg resize-none input-field"
+              rows="24"
+            ></textarea>
+            <!-- Botones en la esquina superior derecha del textarea -->
+            <div class="top-2 right-2 z-10 absolute flex flex-col gap-2">
+              <!-- Botón para escuchar el texto completo -->
+              <button
+                @click="playFullText(inputText.trim())"
+                :disabled="!inputText.trim()"
+                class="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 shadow-md px-2 py-1.5 rounded text-white text-xs transition-colors disabled:cursor-not-allowed"
+                title="Escuchar texto completo"
+              >
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                <span>Escuchar</span>
+              </button>
+
+              <!-- Botón de micrófono para evaluar pronunciación del texto completo -->
+              <button
+                v-if="!isRecordingFullText"
+                @click="handleStartRecordingFullText"
+                :disabled="!isSpeechRecognitionSupported() || isRecording !== null || isRecordingFullText || !inputText.trim()"
+                class="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 shadow-md px-2 py-1.5 rounded text-white text-xs transition-colors disabled:cursor-not-allowed"
+                :title="!isSpeechRecognitionSupported() ? 'Tu navegador no soporta reconocimiento de voz' : 'Grabar pronunciación del texto completo'"
+              >
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                </svg>
+                <span>Grabar</span>
+              </button>
+
+              <button
+                v-else
+                @click="handleStopRecordingFullText"
+                class="flex items-center gap-1 bg-gray-600 hover:bg-gray-700 shadow-md px-2 py-1.5 rounded text-white text-xs transition-colors"
+                title="Detener grabación"
+              >
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
+                </svg>
+                <span>Detener</span>
+              </button>
+
+              <!-- Indicador cuando está grabando texto completo -->
+              <p v-if="isRecordingFullText" class="text-blue-600 text-xs text-center italic animate-pulse">
+                🎤 Escuchando...
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Columna 2: Transliteración, Escucha, Traducción, Grabación y Evaluación -->
@@ -175,61 +220,8 @@
         </div>
       </div>
 
-      <!-- Controles y resultados adicionales -->
-      <div v-if="inputText.trim()" class="space-y-4">
-        <div class="flex justify-between items-center mb-3">
-          <div class="flex items-center gap-3">
-            <!-- Botón para escuchar el texto completo -->
-            <button
-              @click="playFullText(inputText.trim())"
-              class="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded text-white text-sm transition-colors"
-              title="Escuchar texto completo"
-            >
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-              </svg>
-              <span>Escuchar texto</span>
-            </button>
-          </div>
-          <div class="flex items-center gap-3">
-            <p v-if="isTranslating" class="text-blue-600 text-sm italic">Traduciendo...</p>
-
-            <!-- Botón de micrófono para evaluar pronunciación del texto completo -->
-            <div class="flex flex-col items-end gap-2">
-              <button
-                v-if="!isRecordingFullText"
-                @click="handleStartRecordingFullText"
-                :disabled="!isSpeechRecognitionSupported() || isRecording !== null || isRecordingFullText"
-                class="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 px-4 py-2 rounded-lg text-white text-sm transition-colors disabled:cursor-not-allowed"
-                :title="!isSpeechRecognitionSupported() ? 'Tu navegador no soporta reconocimiento de voz' : 'Grabar pronunciación del texto completo'"
-              >
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
-                </svg>
-                <span>Grabar texto completo</span>
-              </button>
-
-              <button
-                v-else
-                @click="handleStopRecordingFullText"
-                class="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-white text-sm transition-colors"
-              >
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
-                </svg>
-                <span>Detener</span>
-              </button>
-
-              <!-- Indicador cuando está grabando texto completo -->
-              <p v-if="isRecordingFullText" class="text-blue-600 text-sm italic animate-pulse">
-                🎤 Habla ahora... El sistema está escuchando
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Resultado de la evaluación del texto completo -->
-        <div v-if="fullTextRecordingResult" class="bg-gray-50 mb-4 p-4 border border-gray-200 rounded-lg">
+      <!-- Resultado de la evaluación del texto completo -->
+      <div v-if="fullTextRecordingResult" class="bg-gray-50 mb-4 p-4 border border-gray-200 rounded-lg">
           <div class="flex justify-between items-center mb-2">
             <h4 class="font-semibold text-gray-700">Evaluación del texto completo:</h4>
             <button
@@ -309,19 +301,17 @@
               </div>
             </div>
           </div>
-        </div>
-
       </div>
+    </div>
 
-      <!-- Mensaje cuando no hay texto -->
-      <div v-else class="py-12 text-gray-500 text-center">
+    <!-- Mensaje cuando no hay texto -->
+    <div v-if="!inputText.trim()" class="py-12 text-gray-500 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-4 w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
         </svg>
         <p class="text-lg">Escribe texto en ruso arriba para ver su transliteración</p>
         <p class="mt-2 text-sm">Haz clic en las líneas o palabras para escuchar su pronunciación</p>
       </div>
-    </div>
 
     <!-- Botones de ayuda -->
     <HelpModals />
