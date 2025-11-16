@@ -4,7 +4,7 @@
       <h1 class="mb-2 font-bold text-gray-800 text-4xl">Traducir/Oír/Leer</h1>
       <p class="text-gray-600">Escribe texto en ruso, tradúcelo y escucha su pronunciación</p>
       <p v-if="isSpeechRecognitionSupported()" class="mt-2 text-blue-600 text-sm">
-        🎤 Usa el botón de micrófono en cada oración para grabar tu pronunciación y recibir retroalimentación
+        🎤 Usa el botón de micrófono en cada oración o el botón "Grabar texto completo" para grabar tu pronunciación y recibir retroalimentación
       </p>
       <p v-else class="mt-2 text-yellow-600 text-sm">
         ⚠️ Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge para grabar tu pronunciación.
@@ -29,7 +29,87 @@
       <div v-if="inputText.trim()" class="space-y-4">
         <div class="flex justify-between items-center mb-3">
           <h3 class="font-semibold text-gray-700 text-lg">Resultado:</h3>
-          <p v-if="isTranslating" class="text-blue-600 text-sm italic">Traduciendo...</p>
+          <div class="flex items-center gap-3">
+            <p v-if="isTranslating" class="text-blue-600 text-sm italic">Traduciendo...</p>
+
+            <!-- Botón de micrófono para evaluar pronunciación del texto completo -->
+            <div class="flex flex-col items-end gap-2">
+              <button
+                v-if="!isRecordingFullText"
+                @click="handleStartRecordingFullText"
+                :disabled="!isSpeechRecognitionSupported() || isRecording !== null || isRecordingFullText"
+                class="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 px-4 py-2 rounded-lg text-white text-sm transition-colors disabled:cursor-not-allowed"
+                :title="!isSpeechRecognitionSupported() ? 'Tu navegador no soporta reconocimiento de voz' : 'Grabar pronunciación del texto completo'"
+              >
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                </svg>
+                <span>Grabar texto completo</span>
+              </button>
+
+              <button
+                v-else
+                @click="handleStopRecordingFullText"
+                class="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-white text-sm transition-colors"
+              >
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
+                </svg>
+                <span>Detener</span>
+              </button>
+
+              <!-- Indicador cuando está grabando texto completo -->
+              <p v-if="isRecordingFullText" class="text-blue-600 text-sm italic animate-pulse">
+                🎤 Habla ahora... El sistema está escuchando
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultado de la evaluación del texto completo -->
+        <div v-if="fullTextRecordingResult" class="bg-gray-50 mb-4 p-4 border border-gray-200 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-semibold text-gray-700">Evaluación del texto completo:</h4>
+            <button
+              @click="clearFullTextRecordingResult"
+              class="text-gray-400 hover:text-gray-600 transition-colors"
+              title="Limpiar resultado"
+            >
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span
+                :class="[
+                  'font-semibold text-base',
+                  fullTextRecordingResult.accuracy >= 80
+                    ? 'text-green-600'
+                    : fullTextRecordingResult.accuracy >= 60
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                ]"
+              >
+                Precisión: {{ fullTextRecordingResult.accuracy }}%
+              </span>
+            </div>
+
+            <div v-if="fullTextRecordingResult.error" class="text-red-600 text-sm italic">
+              {{ fullTextRecordingResult.error }}
+            </div>
+
+            <div v-else-if="fullTextRecordingResult.recognized" class="space-y-1">
+              <p class="text-gray-600 text-sm">
+                <span class="font-medium">Reconocido:</span> "{{ fullTextRecordingResult.recognized }}"
+              </p>
+              <p class="text-gray-600 text-sm">
+                <span class="font-medium">Esperado:</span> "{{ inputText.trim() }}"
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Oraciones procesadas -->
@@ -75,9 +155,9 @@
               <button
                 v-if="isRecording !== sentenceIndex"
                 @click.stop="handleStartRecording(sentenceIndex, sentence.original)"
-                :disabled="!isSpeechRecognitionSupported() || isRecording !== null"
+                :disabled="!isSpeechRecognitionSupported() || isRecording !== null || isRecordingFullText"
                 class="flex items-center gap-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 px-4 py-2 rounded-lg text-white transition-colors disabled:cursor-not-allowed"
-                :title="!isSpeechRecognitionSupported() ? 'Tu navegador no soporta reconocimiento de voz' : ''"
+                :title="!isSpeechRecognitionSupported() ? 'Tu navegador no soporta reconocimiento de voz' : (isRecordingFullText ? 'Hay una grabación del texto completo en curso' : '')"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
@@ -166,10 +246,15 @@ const {
   translateSentences,
   isRecording,
   recordingResults,
+  isRecordingFullText,
+  fullTextRecordingResult,
   isSpeechRecognitionSupported,
   startRecording,
   stopRecording,
-  clearRecordingResult
+  clearRecordingResult,
+  startRecordingFullText,
+  stopRecordingFullText,
+  clearFullTextRecordingResult
 } = usePronunciation()
 
 const inputText = ref('')
@@ -240,6 +325,26 @@ const handleStartRecording = async (sentenceIndex, expectedText) => {
 // Manejar detención de grabación
 const handleStopRecording = () => {
   stopRecording()
+}
+
+// Manejar inicio de grabación del texto completo
+const handleStartRecordingFullText = async () => {
+  if (!inputText.value || !inputText.value.trim()) {
+    alert('No hay texto para evaluar')
+    return
+  }
+
+  try {
+    await startRecordingFullText(inputText.value.trim())
+  } catch (error) {
+    // El error ya se maneja en el composable y se muestra en fullTextRecordingResult
+    console.error('Error al grabar texto completo:', error)
+  }
+}
+
+// Manejar detención de grabación del texto completo
+const handleStopRecordingFullText = () => {
+  stopRecordingFullText()
 }
 </script>
 

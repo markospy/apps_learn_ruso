@@ -4,6 +4,8 @@ export const usePronunciation = () => {
   const isPlaying = ref(false)
   const isRecording = ref<number | null>(null)
   const recordingResults = ref<Record<number, { recognized: string, accuracy: number, error?: string }>>({})
+  const isRecordingFullText = ref(false)
+  const fullTextRecordingResult = ref<{ recognized: string, accuracy: number, error?: string } | null>(null)
   let currentUtterance: SpeechSynthesisUtterance | null = null
   let currentRecognition: any = null
 
@@ -628,10 +630,202 @@ export const usePronunciation = () => {
     }
   }
 
+  // Iniciar grabación del texto completo
+  const startRecordingFullText = (fullText: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!fullText || !fullText.trim()) {
+        const errorMessage = 'No hay texto para evaluar'
+        fullTextRecordingResult.value = {
+          recognized: '',
+          accuracy: 0,
+          error: errorMessage
+        }
+        reject(new Error(errorMessage))
+        return
+      }
+
+      if (!isSpeechRecognitionSupported()) {
+        const errorMessage = 'Tu navegador no soporta reconocimiento de voz'
+        fullTextRecordingResult.value = {
+          recognized: '',
+          accuracy: 0,
+          error: errorMessage
+        }
+        reject(new Error(errorMessage))
+        return
+      }
+
+      if (isRecording.value !== null || isRecordingFullText.value) {
+        const errorMessage = 'Ya hay una grabación en curso'
+        fullTextRecordingResult.value = {
+          recognized: '',
+          accuracy: 0,
+          error: errorMessage
+        }
+        reject(new Error(errorMessage))
+        return
+      }
+
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      const recognition = new SpeechRecognition()
+
+      recognition.lang = 'ru-RU'
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+
+      isRecordingFullText.value = true
+      fullTextRecordingResult.value = null
+
+      // Timeout manual para evitar que se quede colgado
+      let timeoutId: NodeJS.Timeout | null = null
+      const maxRecordingTime = 30000 // 30 segundos máximo para texto completo
+
+      timeoutId = setTimeout(() => {
+        if (isRecordingFullText.value) {
+          recognition.stop()
+          const errorMessage = 'Tiempo de grabación excedido. Por favor, intenta de nuevo.'
+          fullTextRecordingResult.value = {
+            recognized: '',
+            accuracy: 0,
+            error: errorMessage
+          }
+          isRecordingFullText.value = false
+          currentRecognition = null
+          reject(new Error(errorMessage))
+        }
+      }, maxRecordingTime)
+
+      recognition.onresult = (event: any) => {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
+        const recognized = event.results[0][0].transcript.trim()
+        const accuracy = calculateAccuracy(fullText.trim(), recognized)
+
+        console.log('Evaluación de pronunciación (texto completo):', {
+          esperado: fullText.trim(),
+          reconocido: recognized,
+          precisión: accuracy
+        })
+
+        fullTextRecordingResult.value = {
+          recognized,
+          accuracy
+        }
+
+        isRecordingFullText.value = false
+        currentRecognition = null
+        resolve()
+      }
+
+      recognition.onerror = (event: any) => {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
+        console.error('Error en reconocimiento (texto completo):', event.error)
+        let errorMessage = 'Error al reconocer el audio'
+
+        switch (event.error) {
+          case 'no-speech':
+            errorMessage = 'No se detectó habla. Por favor, habla claramente inmediatamente después de presionar el botón de grabar.'
+            break
+          case 'audio-capture':
+            errorMessage = 'No se pudo acceder al micrófono. Verifica los permisos y que el micrófono esté conectado.'
+            break
+          case 'not-allowed':
+            errorMessage = 'Permiso de micrófono denegado. Por favor, permite el acceso al micrófono en la configuración del navegador.'
+            break
+          case 'network':
+            errorMessage = 'Error de red. Verifica tu conexión a internet.'
+            break
+          case 'aborted':
+            // Si fue abortado manualmente, no mostrar error
+            isRecordingFullText.value = false
+            currentRecognition = null
+            return
+          default:
+            errorMessage = `Error: ${event.error}`
+        }
+
+        fullTextRecordingResult.value = {
+          recognized: '',
+          accuracy: 0,
+          error: errorMessage
+        }
+
+        isRecordingFullText.value = false
+        currentRecognition = null
+        reject(new Error(errorMessage))
+      }
+
+      recognition.onend = () => {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
+        if (isRecordingFullText.value) {
+          // Si aún está grabando, significa que terminó inesperadamente
+          // Solo limpiar el estado si no hay un resultado
+          if (!fullTextRecordingResult.value) {
+            isRecordingFullText.value = false
+            currentRecognition = null
+          }
+        }
+      }
+
+      currentRecognition = recognition
+
+      try {
+        recognition.start()
+      } catch (error: any) {
+        // Limpiar timeout si existe
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
+        const errorMessage = 'No se pudo iniciar la grabación. Asegúrate de que el micrófono esté disponible.'
+        fullTextRecordingResult.value = {
+          recognized: '',
+          accuracy: 0,
+          error: errorMessage
+        }
+        isRecordingFullText.value = false
+        currentRecognition = null
+        reject(new Error(errorMessage))
+      }
+    })
+  }
+
+  // Detener grabación del texto completo
+  const stopRecordingFullText = () => {
+    if (currentRecognition && isRecordingFullText.value) {
+      currentRecognition.stop()
+      currentRecognition = null
+      isRecordingFullText.value = false
+    }
+  }
+
+  // Limpiar resultado de grabación del texto completo
+  const clearFullTextRecordingResult = () => {
+    fullTextRecordingResult.value = null
+  }
+
   return {
     isPlaying,
     isRecording,
     recordingResults,
+    isRecordingFullText,
+    fullTextRecordingResult,
     isSpeechRecognitionSupported,
     transliterateToSpanish,
     speak,
@@ -639,6 +833,9 @@ export const usePronunciation = () => {
     startRecording,
     stopRecording,
     clearRecordingResult,
+    startRecordingFullText,
+    stopRecordingFullText,
+    clearFullTextRecordingResult,
     processText,
     translateText,
     translateSentences,
