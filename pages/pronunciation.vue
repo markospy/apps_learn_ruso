@@ -20,8 +20,8 @@
             <textarea
               v-model="inputText"
               placeholder="Escribe o pega texto en ruso aquí..."
-              class="flex-1 pr-32 min-h-[600px] font-mono text-lg resize-none input-field"
-              rows="24"
+              class="flex-1 pr-32 min-h-[200px] max-h-[400px] overflow-y-auto font-mono text-lg resize-none input-field"
+              rows="10"
             ></textarea>
             <!-- Botones en la esquina superior derecha del textarea -->
             <div class="top-2 right-2 z-10 absolute flex flex-col gap-2">
@@ -74,7 +74,7 @@
 
         <!-- Columna 2: Transliteración, Escucha, Traducción, Grabación y Evaluación -->
         <div class="flex flex-col">
-          <div class="flex-1 bg-gray-50 p-4 border border-gray-300 rounded min-h-[600px] overflow-y-auto">
+          <div class="flex-1 bg-gray-50 p-4 border border-gray-300 rounded min-h-[200px] max-h-[305px] overflow-y-auto">
             <div v-if="inputText.trim()" class="space-y-4">
               <div
                 v-for="(sentence, sentenceIndex) in processedSentences"
