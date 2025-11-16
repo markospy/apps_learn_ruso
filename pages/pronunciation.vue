@@ -69,9 +69,21 @@
                     </svg>
                   </button>
                 </div>
-                <p class="text-gray-600 text-sm italic">
+                <p class="mb-2 text-gray-600 text-sm italic">
                   {{ sentence.transliteration || '' }}
                 </p>
+                <!-- Palabras individuales clickeables -->
+                <div v-if="sentence.words && sentence.words.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                  <span
+                    v-for="(word, wordIndex) in sentence.words"
+                    :key="wordIndex"
+                    @click.stop="playWord(word.text)"
+                    class="bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded text-xs transition-colors cursor-pointer"
+                    :title="word.transliteration"
+                  >
+                    {{ word.text }}
+                  </span>
+                </div>
                 <!-- Resultado de la evaluación -->
                 <div v-if="recordingResults[sentenceIndex]" class="mt-2 text-xs">
                   <span
@@ -122,12 +134,24 @@
                 <p class="mb-1 font-medium text-gray-800 text-base">
                   {{ sentence.original || '(oración vacía)' }}
                 </p>
-                <p v-if="sentence.translation" class="text-green-600 text-base">
+                <p v-if="sentence.translation" class="mb-2 text-green-600 text-base">
                   {{ sentence.translation }}
                 </p>
-                <p v-else class="text-gray-400 text-sm italic">
+                <p v-else class="mb-2 text-gray-400 text-sm italic">
                   Traduciendo...
                 </p>
+                <!-- Palabras individuales clickeables -->
+                <div v-if="sentence.words && sentence.words.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                  <span
+                    v-for="(word, wordIndex) in sentence.words"
+                    :key="wordIndex"
+                    @click.stop="playWord(word.text)"
+                    class="bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded text-xs transition-colors cursor-pointer"
+                    :title="word.transliteration"
+                  >
+                    {{ word.text }}
+                  </span>
+                </div>
               </div>
             </div>
             <div v-else class="flex justify-center items-center h-full text-gray-400 text-sm">
