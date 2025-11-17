@@ -11,11 +11,11 @@
     <div class="p-6 card">
       <div class="flex justify-between items-center mb-4">
         <h2 class="font-semibold text-gray-700 text-2xl">
-          Mi Lista de Verbos ({{ verbs.length }})
+          Mi Lista de Verbos ({{ pagination.total }})
         </h2>
         <button
           v-if="verbs.length > 0"
-          @click="fetchVerbs"
+          @click="loadPage(pagination.page)"
           class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm transition-colors"
         >
           Refrescar
@@ -52,6 +52,27 @@
           </div>
         </div>
       </div>
+
+      <!-- Paginación -->
+      <div v-if="pagination.totalPages > 1" class="flex justify-center items-center gap-2 mt-6">
+        <button
+          @click="loadPage(pagination.page - 1)"
+          :disabled="pagination.page === 1 || loading"
+          class="hover:bg-gray-50 disabled:opacity-50 px-4 py-2 border border-gray-300 rounded-lg transition-colors disabled:cursor-not-allowed"
+        >
+          Anterior
+        </button>
+        <span class="px-4 py-2 text-gray-700">
+          Página {{ pagination.page }} de {{ pagination.totalPages }}
+        </span>
+        <button
+          @click="loadPage(pagination.page + 1)"
+          :disabled="pagination.page >= pagination.totalPages || loading"
+          class="hover:bg-gray-50 disabled:opacity-50 px-4 py-2 border border-gray-300 rounded-lg transition-colors disabled:cursor-not-allowed"
+        >
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -61,7 +82,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { verbs, loading, fetchVerbs } = useVerbs()
+const { verbs, loading, fetchVerbs, pagination } = useVerbs()
 
 // Obtener texto de traducciones para mostrar
 const getTranslationsText = (translations) => {
@@ -73,6 +94,12 @@ const getTranslationsText = (translations) => {
     return `${lang.toUpperCase()}: ${texts.join(', ')}`
   }
   return ''
+}
+
+// Cargar página específica
+const loadPage = (page) => {
+  if (page < 1 || page > pagination.value.totalPages) return
+  fetchVerbs(page, pagination.value.perPage)
 }
 
 // Cargar verbos al montar

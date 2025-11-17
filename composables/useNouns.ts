@@ -3,11 +3,17 @@ export const useNouns = () => {
   const currentNoun = useState('currentNoun', () => null)
   const loading = ref(false)
   const error = ref(null)
+  const pagination = useState('nounsPagination', () => ({
+    page: 1,
+    perPage: 20,
+    total: 0,
+    totalPages: 0,
+  }))
 
   const api = createApiClient()
 
   // Obtener todos los sustantivos
-  const fetchNouns = async (page: number = 1, perPage: number = 100) => {
+  const fetchNouns = async (page: number = 1, perPage: number = 20) => {
     loading.value = true
     error.value = null
     try {
@@ -16,11 +22,17 @@ export const useNouns = () => {
       })
       // La API ahora devuelve un objeto con items, total, page, per_page, total_pages
       nouns.value = data.items || []
-      return data.items || []
+      pagination.value = {
+        page: data.page || page,
+        perPage: data.per_page || perPage,
+        total: data.total || 0,
+        totalPages: data.total_pages || 0,
+      }
+      return data
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Error al cargar sustantivos'
       console.error('Fetch nouns error:', err)
-      return []
+      return { items: [], total: 0, page: 1, per_page: perPage, total_pages: 0 }
     } finally {
       loading.value = false
     }
@@ -60,6 +72,7 @@ export const useNouns = () => {
     currentNoun,
     loading,
     error,
+    pagination,
     fetchNouns,
     fetchNoun,
     selectRandomNoun,

@@ -1,15 +1,45 @@
 <template>
   <div>
     <div class="mb-8">
-      <h1 class="mb-2 font-bold text-gray-800 text-4xl">Grupos de Verbos</h1>
-      <p class="text-gray-600">Organiza tus verbos en grupos personalizados</p>
+      <h1 class="mb-2 font-bold text-gray-800 text-4xl">Grupos de Estudio</h1>
+      <p class="text-gray-600">Organiza tus verbos y sustantivos en grupos personalizados</p>
     </div>
 
-    <!-- Formulario para crear grupo -->
-    <div class="mb-8 p-6 card">
-      <h2 class="mb-4 font-semibold text-gray-700 text-2xl">Crear Nuevo Grupo</h2>
+    <!-- Selector de tipo de grupo -->
+    <div class="mb-6">
+      <div class="flex gap-2">
+        <button
+          @click="groupType = 'verbs'"
+          :class="[
+            'px-6 py-3 rounded-lg font-medium transition-colors',
+            groupType === 'verbs'
+              ? 'bg-blue-500 text-white'
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+          ]"
+        >
+          Grupos de Verbos
+        </button>
+        <button
+          @click="groupType = 'nouns'"
+          :class="[
+            'px-6 py-3 rounded-lg font-medium transition-colors',
+            groupType === 'nouns'
+              ? 'bg-blue-500 text-white'
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+          ]"
+        >
+          Grupos de Sustantivos
+        </button>
+      </div>
+    </div>
 
-      <form @submit.prevent="handleCreateGroup" class="space-y-4">
+    <!-- Formulario para crear/editar grupo -->
+    <div class="mb-8 p-6 card">
+      <h2 class="mb-4 font-semibold text-gray-700 text-2xl">
+        {{ editingGroup ? 'Editar Grupo' : 'Crear Nuevo Grupo' }}
+      </h2>
+
+      <form @submit.prevent="handleSaveGroup" class="space-y-4">
         <div v-if="error" class="bg-red-50 p-3 rounded-lg text-red-600 text-sm">
           {{ error }}
         </div>
@@ -20,7 +50,7 @@
           </label>
           <input
             id="groupName"
-            v-model="newGroupName"
+            v-model="groupName"
             type="text"
             required
             class="input-field"
@@ -28,29 +58,39 @@
           />
         </div>
 
-        <button
-          type="submit"
-          :disabled="loading || !newGroupName.trim()"
-          class="w-full btn-primary"
-        >
-          {{ loading ? 'Creando...' : 'Crear Grupo' }}
-        </button>
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            :disabled="loading || !groupName.trim()"
+            class="flex-1 btn-primary"
+          >
+            {{ loading ? 'Guardando...' : (editingGroup ? 'Actualizar' : 'Crear') }} Grupo
+          </button>
+          <button
+            v-if="editingGroup"
+            type="button"
+            @click="cancelEdit"
+            class="px-6 btn-secondary"
+          >
+            Cancelar
+          </button>
+        </div>
       </form>
     </div>
 
     <!-- Lista de grupos -->
     <div class="p-6 card">
       <h2 class="mb-4 font-semibold text-gray-700 text-2xl">
-        Mis Grupos ({{ groups.length }})
+        Mis Grupos {{ groupType === 'verbs' ? 'de Verbos' : 'de Sustantivos' }} ({{ currentGroups.length }})
       </h2>
 
       <!-- Loading state -->
-      <div v-if="loading && groups.length === 0" class="py-8 text-gray-500 text-center">
+      <div v-if="loading && currentGroups.length === 0" class="py-8 text-gray-500 text-center">
         <p>Cargando grupos...</p>
       </div>
 
       <!-- Sin grupos -->
-      <div v-else-if="groups.length === 0" class="py-8 text-gray-500 text-center">
+      <div v-else-if="currentGroups.length === 0" class="py-8 text-gray-500 text-center">
         <p class="text-lg">No tienes grupos creados</p>
         <p class="mt-2 text-sm">Crea tu primer grupo usando el formulario de arriba</p>
       </div>
@@ -58,7 +98,7 @@
       <!-- Lista de grupos -->
       <div v-else class="space-y-3">
         <div
-          v-for="group in groups"
+          v-for="group in currentGroups"
           :key="group.id"
           class="bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors"
         >
@@ -70,12 +110,18 @@
               </p>
             </div>
             <div class="flex gap-2">
-              <NuxtLink
-                :to="`/groups/${group.id}`"
-                class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded font-semibold text-white transition-colors"
+              <button
+                @click="editGroup(group)"
+                class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded font-semibold text-white transition-colors"
               >
-                Ver
-              </NuxtLink>
+                Editar
+              </button>
+              <button
+                @click="openAddItemsModal(group)"
+                class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded font-semibold text-white transition-colors"
+              >
+                Agregar {{ groupType === 'verbs' ? 'Verbos' : 'Sustantivos' }}
+              </button>
               <button
                 @click="handleDeleteGroup(group.id)"
                 class="hover:bg-red-50 px-4 py-2 rounded font-semibold text-red-500 transition-colors"
@@ -87,6 +133,91 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal para agregar verbos/sustantivos -->
+    <div
+      v-if="showAddItemsModal"
+      class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50"
+      @click.self="closeAddItemsModal"
+    >
+      <div class="bg-white mx-4 p-6 rounded-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-gray-800 text-xl">
+            Agregar {{ groupType === 'verbs' ? 'Verbos' : 'Sustantivos' }} a "{{ selectedGroup?.name_group }}"
+          </h3>
+          <button
+            @click="closeAddItemsModal"
+            class="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <!-- Buscador -->
+        <div class="mb-4">
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="w-full input-field"
+            :placeholder="`Buscar ${groupType === 'verbs' ? 'verbos' : 'sustantivos'}...`"
+          />
+        </div>
+
+        <!-- Lista de items -->
+        <div v-if="loadingItems" class="py-8 text-gray-500 text-center">
+          <p>Cargando...</p>
+        </div>
+        <div v-else-if="filteredItems.length === 0" class="py-8 text-gray-500 text-center">
+          <p>No hay {{ groupType === 'verbs' ? 'verbos' : 'sustantivos' }} disponibles</p>
+        </div>
+        <div v-else class="space-y-2 max-h-96 overflow-y-auto">
+          <div
+            v-for="item in filteredItems"
+            :key="item.id"
+            class="flex justify-between items-center bg-gray-50 hover:bg-gray-100 p-3 rounded-lg"
+          >
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">
+                <template v-if="groupType === 'verbs'">
+                  {{ item.imperfective?.infinitive?.word?.word || 'N/A' }}
+                </template>
+                <template v-else>
+                  {{ item.noun }}
+                </template>
+              </p>
+            </div>
+            <button
+              @click="addItemToGroup(item.id)"
+              :disabled="addingItemId === item.id"
+              class="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 px-4 py-2 rounded font-semibold text-white text-sm transition-colors disabled:cursor-not-allowed"
+            >
+              {{ addingItemId === item.id ? 'Agregando...' : 'Agregar' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Paginación del modal -->
+        <div v-if="itemsPagination.totalPages > 1" class="flex justify-center items-center gap-2 mt-4">
+          <button
+            @click="loadItemsPage(itemsPagination.page - 1)"
+            :disabled="itemsPagination.page === 1 || loadingItems"
+            class="hover:bg-gray-50 disabled:opacity-50 px-4 py-2 border border-gray-300 rounded-lg transition-colors disabled:cursor-not-allowed"
+          >
+            Anterior
+          </button>
+          <span class="px-4 py-2 text-gray-700">
+            Página {{ itemsPagination.page }} de {{ itemsPagination.totalPages }}
+          </span>
+          <button
+            @click="loadItemsPage(itemsPagination.page + 1)"
+            :disabled="itemsPagination.page >= itemsPagination.totalPages || loadingItems"
+            class="hover:bg-gray-50 disabled:opacity-50 px-4 py-2 border border-gray-300 rounded-lg transition-colors disabled:cursor-not-allowed"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -95,38 +226,174 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { groups, loading, fetchGroups, createGroup, deleteGroup } = useVerbGroups()
+const { groups: verbGroups, loading: verbGroupsLoading, fetchGroups: fetchVerbGroups, createGroup: createVerbGroup, updateGroup: updateVerbGroup, deleteGroup: deleteVerbGroup, addVerbToGroup } = useVerbGroups()
+const { groups: nounGroups, loading: nounGroupsLoading, fetchGroups: fetchNounGroups, createGroup: createNounGroup, updateGroup: updateNounGroup, deleteGroup: deleteNounGroup, addNounToGroup } = useNounGroups()
+const { verbs, fetchVerbs, pagination: verbsPagination } = useVerbs()
+const { nouns, fetchNouns, pagination: nounsPagination } = useNouns()
 
-const newGroupName = ref('')
+const groupType = ref('verbs')
+const groupName = ref('')
+const editingGroup = ref(null)
 const error = ref('')
+const showAddItemsModal = ref(false)
+const selectedGroup = ref(null)
+const searchQuery = ref('')
+const loadingItems = ref(false)
+const addingItemId = ref(null)
 
-// Cargar grupos al montar
-onMounted(() => {
-  fetchGroups()
+// Computed
+const currentGroups = computed(() => {
+  return groupType.value === 'verbs' ? verbGroups.value : nounGroups.value
 })
 
-// Crear grupo
-const handleCreateGroup = async () => {
-  error.value = ''
+const loading = computed(() => {
+  return groupType.value === 'verbs' ? verbGroupsLoading.value : nounGroupsLoading.value
+})
 
-  const result = await createGroup({ name_group: newGroupName.value })
+const itemsPagination = computed(() => {
+  return groupType.value === 'verbs' ? verbsPagination.value : nounsPagination.value
+})
 
-  if (result.success) {
-    newGroupName.value = ''
+const filteredItems = computed(() => {
+  const items = groupType.value === 'verbs' ? verbs.value : nouns.value
+  if (!searchQuery.value.trim()) return items
+
+  const query = searchQuery.value.toLowerCase()
+  return items.filter(item => {
+    if (groupType.value === 'verbs') {
+      const infinitive = item.imperfective?.infinitive?.word?.word || ''
+      return infinitive.toLowerCase().includes(query)
+    } else {
+      return item.noun?.toLowerCase().includes(query)
+    }
+  })
+})
+
+// Métodos
+const loadGroups = async () => {
+  if (groupType.value === 'verbs') {
+    await fetchVerbGroups()
   } else {
-    error.value = result.error || 'Error al crear el grupo'
+    await fetchNounGroups()
   }
 }
 
-// Eliminar grupo
+const handleSaveGroup = async () => {
+  error.value = ''
+
+  if (editingGroup.value) {
+    // Actualizar grupo
+    const result = groupType.value === 'verbs'
+      ? await updateVerbGroup(editingGroup.value.id, { name_group: groupName.value })
+      : await updateNounGroup(editingGroup.value.id, { name_group: groupName.value })
+
+    if (result.success) {
+      groupName.value = ''
+      editingGroup.value = null
+      await loadGroups()
+    } else {
+      error.value = result.error || 'Error al actualizar el grupo'
+    }
+  } else {
+    // Crear grupo
+    const result = groupType.value === 'verbs'
+      ? await createVerbGroup({ name_group: groupName.value })
+      : await createNounGroup({ name_group: groupName.value })
+
+    if (result.success) {
+      groupName.value = ''
+      await loadGroups()
+    } else {
+      error.value = result.error || 'Error al crear el grupo'
+    }
+  }
+}
+
+const editGroup = (group) => {
+  editingGroup.value = group
+  groupName.value = group.name_group
+}
+
+const cancelEdit = () => {
+  editingGroup.value = null
+  groupName.value = ''
+  error.value = ''
+}
+
 const handleDeleteGroup = async (id) => {
   if (!confirm('¿Estás seguro de que quieres eliminar este grupo?')) return
 
-  const result = await deleteGroup(id)
+  const result = groupType.value === 'verbs'
+    ? await deleteVerbGroup(id)
+    : await deleteNounGroup(id)
 
   if (!result.success) {
     alert(result.error || 'Error al eliminar el grupo')
+  } else {
+    await loadGroups()
   }
 }
-</script>
 
+const openAddItemsModal = async (group) => {
+  selectedGroup.value = group
+  showAddItemsModal.value = true
+  await loadItems(1)
+}
+
+const closeAddItemsModal = () => {
+  showAddItemsModal.value = false
+  selectedGroup.value = null
+  searchQuery.value = ''
+}
+
+const loadItems = async (page = 1) => {
+  loadingItems.value = true
+  try {
+    if (groupType.value === 'verbs') {
+      await fetchVerbs(page, 20)
+    } else {
+      await fetchNouns(page, 20)
+    }
+  } finally {
+    loadingItems.value = false
+  }
+}
+
+const loadItemsPage = (page) => {
+  if (page < 1 || page > itemsPagination.value.totalPages) return
+  loadItems(page)
+}
+
+const addItemToGroup = async (itemId) => {
+  if (!selectedGroup.value) return
+
+  addingItemId.value = itemId
+  try {
+    const result = groupType.value === 'verbs'
+      ? await addVerbToGroup(selectedGroup.value.id, itemId)
+      : await addNounToGroup(selectedGroup.value.id, itemId)
+
+    if (result.success) {
+      // Recargar items para actualizar la lista
+      await loadItems(itemsPagination.value.page)
+    } else {
+      alert(result.error || `Error al agregar ${groupType.value === 'verbs' ? 'verbo' : 'sustantivo'}`)
+    }
+  } finally {
+    addingItemId.value = null
+  }
+}
+
+// Watchers
+watch(groupType, () => {
+  editingGroup.value = null
+  groupName.value = ''
+  error.value = ''
+  loadGroups()
+})
+
+// Cargar grupos al montar
+onMounted(() => {
+  loadGroups()
+})
+</script>

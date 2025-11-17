@@ -49,7 +49,7 @@
                       to="/verbs"
                       class="block hover:bg-blue-50 px-4 py-2 rounded-t-md text-gray-700 hover:text-blue-600 text-sm"
                     >
-                      ➕ Agregar
+                    📖 Lista
                     </NuxtLink>
                     <NuxtLink
                       to="/verbs/practice"
@@ -80,7 +80,7 @@
                       to="/nouns"
                       class="block hover:bg-blue-50 px-4 py-2 rounded-t-md text-gray-700 hover:text-blue-600 text-sm"
                     >
-                      ➕ Agregar
+                    📖 Lista
                     </NuxtLink>
                     <NuxtLink
                       to="/nouns/practice"
@@ -223,7 +223,7 @@
                   to="/verbs"
                   class="block hover:bg-blue-50 px-3 py-2 rounded-md text-gray-600 hover:text-blue-600 text-sm"
                 >
-                  ➕ Agregar
+                  📖 Lista
                 </NuxtLink>
                 <NuxtLink
                   to="/verbs/practice"
@@ -256,7 +256,7 @@
                   to="/nouns"
                   class="block hover:bg-blue-50 px-3 py-2 rounded-md text-gray-600 hover:text-blue-600 text-sm"
                 >
-                  ➕ Agregar
+                  📖 Lista
                 </NuxtLink>
                 <NuxtLink
                   to="/nouns/practice"
