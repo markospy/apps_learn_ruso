@@ -174,25 +174,40 @@
           <div
             v-for="item in filteredItems"
             :key="item.id"
-            class="flex justify-between items-center bg-gray-50 hover:bg-gray-100 p-3 rounded-lg"
+            class="flex justify-between items-center p-3 rounded-lg transition-colors"
+            :class="isItemInGroup(item.id) ? 'bg-green-50 border-2 border-green-300' : 'bg-gray-50 hover:bg-gray-100'"
           >
-            <div class="flex-1">
-              <p class="font-medium text-gray-800">
-                <template v-if="groupType === 'verbs'">
-                  {{ item.imperfective?.infinitive?.word?.word || 'N/A' }}
-                </template>
-                <template v-else>
-                  {{ item.noun }}
-                </template>
-              </p>
+            <div class="flex flex-1 items-center gap-3">
+              <div v-if="isItemInGroup(item.id)" class="flex-shrink-0">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium text-gray-800">
+                  <template v-if="groupType === 'verbs'">
+                    {{ item.imperfective?.infinitive?.word?.word || 'N/A' }}
+                  </template>
+                  <template v-else>
+                    {{ item.noun }}
+                  </template>
+                </p>
+                <p v-if="getSpanishTranslation(item)" class="mt-1 text-gray-500 text-sm">
+                  {{ getSpanishTranslation(item) }}
+                </p>
+              </div>
             </div>
             <button
+              v-if="!isItemInGroup(item.id)"
               @click="addItemToGroup(item.id)"
               :disabled="addingItemId === item.id"
               class="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 px-4 py-2 rounded font-semibold text-white text-sm transition-colors disabled:cursor-not-allowed"
             >
               {{ addingItemId === item.id ? 'Agregando...' : 'Agregar' }}
             </button>
+            <span v-else class="px-4 py-2 font-semibold text-green-600 text-sm">
+              En el grupo
+            </span>
           </div>
         </div>
 
@@ -226,8 +241,8 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { groups: verbGroups, loading: verbGroupsLoading, fetchGroups: fetchVerbGroups, createGroup: createVerbGroup, updateGroup: updateVerbGroup, deleteGroup: deleteVerbGroup, addVerbToGroup } = useVerbGroups()
-const { groups: nounGroups, loading: nounGroupsLoading, fetchGroups: fetchNounGroups, createGroup: createNounGroup, updateGroup: updateNounGroup, deleteGroup: deleteNounGroup, addNounToGroup } = useNounGroups()
+const { groups: verbGroups, loading: verbGroupsLoading, fetchGroups: fetchVerbGroups, createGroup: createVerbGroup, updateGroup: updateVerbGroup, deleteGroup: deleteVerbGroup, addVerbToGroup, fetchGroup: fetchVerbGroup } = useVerbGroups()
+const { groups: nounGroups, loading: nounGroupsLoading, fetchGroups: fetchNounGroups, createGroup: createNounGroup, updateGroup: updateNounGroup, deleteGroup: deleteNounGroup, addNounToGroup, fetchGroup: fetchNounGroup } = useNounGroups()
 const { verbs, fetchVerbs, pagination: verbsPagination } = useVerbs()
 const { nouns, fetchNouns, pagination: nounsPagination } = useNouns()
 
@@ -237,6 +252,7 @@ const editingGroup = ref(null)
 const error = ref('')
 const showAddItemsModal = ref(false)
 const selectedGroup = ref(null)
+const selectedGroupDetails = ref(null)
 const searchQuery = ref('')
 const loadingItems = ref(false)
 const addingItemId = ref(null)
@@ -262,12 +278,36 @@ const filteredItems = computed(() => {
   return items.filter(item => {
     if (groupType.value === 'verbs') {
       const infinitive = item.imperfective?.infinitive?.word?.word || ''
-      return infinitive.toLowerCase().includes(query)
+      const translation = getSpanishTranslation(item) || ''
+      return infinitive.toLowerCase().includes(query) || translation.toLowerCase().includes(query)
     } else {
-      return item.noun?.toLowerCase().includes(query)
+      const noun = item.noun || ''
+      const translation = getSpanishTranslation(item) || ''
+      return noun.toLowerCase().includes(query) || translation.toLowerCase().includes(query)
     }
   })
 })
+
+// Obtener traducción al español
+const getSpanishTranslation = (item) => {
+  if (!item.translations || item.translations.length === 0) return ''
+  const translation = item.translations[0]
+  if (translation.es && Array.isArray(translation.es) && translation.es.length > 0) {
+    return translation.es.join(', ')
+  }
+  return ''
+}
+
+// Verificar si un item ya está en el grupo
+const isItemInGroup = (itemId) => {
+  if (!selectedGroupDetails.value) return false
+
+  if (groupType.value === 'verbs') {
+    return selectedGroupDetails.value.verbs?.some((v) => v.id === itemId) || false
+  } else {
+    return selectedGroupDetails.value.nouns?.some((n) => n.id === itemId) || false
+  }
+}
 
 // Métodos
 const loadGroups = async () => {
@@ -337,12 +377,29 @@ const handleDeleteGroup = async (id) => {
 const openAddItemsModal = async (group) => {
   selectedGroup.value = group
   showAddItemsModal.value = true
+
+  // Cargar detalles del grupo para saber qué items ya están incluidos
+  loadingItems.value = true
+  try {
+    if (groupType.value === 'verbs') {
+      selectedGroupDetails.value = await fetchVerbGroup(group.id)
+    } else {
+      selectedGroupDetails.value = await fetchNounGroup(group.id)
+    }
+  } catch (err) {
+    console.error('Error loading group details:', err)
+    selectedGroupDetails.value = null
+  } finally {
+    loadingItems.value = false
+  }
+
   await loadItems(1)
 }
 
 const closeAddItemsModal = () => {
   showAddItemsModal.value = false
   selectedGroup.value = null
+  selectedGroupDetails.value = null
   searchQuery.value = ''
 }
 
@@ -374,6 +431,12 @@ const addItemToGroup = async (itemId) => {
       : await addNounToGroup(selectedGroup.value.id, itemId)
 
     if (result.success) {
+      // Recargar detalles del grupo para actualizar la lista
+      if (groupType.value === 'verbs') {
+        selectedGroupDetails.value = await fetchVerbGroup(selectedGroup.value.id)
+      } else {
+        selectedGroupDetails.value = await fetchNounGroup(selectedGroup.value.id)
+      }
       // Recargar items para actualizar la lista
       await loadItems(itemsPagination.value.page)
     } else {
