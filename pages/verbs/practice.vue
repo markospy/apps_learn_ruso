@@ -10,8 +10,95 @@
       <p class="text-gray-600">Cargando verbos...</p>
     </div>
 
+    <!-- Ventana de selección de práctica -->
+    <div v-if="!practiceStarted && !loading && verbs.length > 0" class="p-6 card">
+      <h2 class="mb-6 font-semibold text-gray-800 text-2xl">Selecciona tu práctica</h2>
+
+      <!-- Tipos de práctica -->
+      <div class="mb-6">
+        <h3 class="mb-3 font-medium text-gray-700 text-lg">Tipo de Ejercicio</h3>
+        <div class="gap-3 grid grid-cols-1 md:grid-cols-2">
+          <button
+            @click="startPractice('conjugation')"
+            class="bg-blue-50 hover:bg-blue-100 p-4 border-2 border-blue-200 rounded-lg text-left transition-colors"
+          >
+            <h4 class="mb-1 font-semibold text-blue-800">Conjugación</h4>
+            <p class="text-blue-600 text-sm">Practica la conjugación de verbos en diferentes tiempos</p>
+          </button>
+          <button
+            @click="startPractice('vocabulary')"
+            class="bg-green-50 hover:bg-green-100 p-4 border-2 border-green-200 rounded-lg text-left transition-colors"
+          >
+            <h4 class="mb-1 font-semibold text-green-800">Vocabulario</h4>
+            <p class="text-green-600 text-sm">Aprende y memoriza verbos con sus traducciones</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selección de fuente -->
+      <div class="mb-6">
+        <h3 class="mb-3 font-medium text-gray-700 text-lg">¿Con qué quieres practicar?</h3>
+        <div class="space-y-3">
+          <button
+            @click="selectedSource = 'all'"
+            :class="[
+              'w-full p-4 rounded-lg text-left transition-colors',
+              selectedSource === 'all'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+            ]"
+          >
+            <div class="flex justify-between items-center">
+              <div>
+                <h4 class="mb-1 font-semibold">Todos los Verbos</h4>
+                <p class="opacity-90 text-sm">{{ verbs.length }} verbos disponibles</p>
+              </div>
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+          </button>
+
+          <div v-if="verbGroups.length > 0">
+            <p class="mb-2 font-medium text-gray-600 text-sm">O selecciona un grupo:</p>
+            <div class="space-y-2">
+              <button
+                v-for="group in verbGroups"
+                :key="group.id"
+                @click="selectedSource = `group-${group.id}`"
+                :class="[
+                  'w-full p-3 rounded-lg text-left transition-colors',
+                  selectedSource === `group-${group.id}`
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                ]"
+              >
+                <div class="flex justify-between items-center">
+                  <div>
+                    <h4 class="font-semibold">{{ group.name_group }}</h4>
+                    <p class="opacity-90 text-sm">{{ getGroupVerbCount(group.id) }} verbos</p>
+                  </div>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        @click="confirmStartPractice"
+        :disabled="!selectedSource || !selectedPracticeType"
+        class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 py-3 rounded-lg w-full font-semibold text-white transition-colors disabled:cursor-not-allowed"
+      >
+        Comenzar Práctica
+      </button>
+    </div>
+
     <!-- Sin verbos -->
-    <div v-else-if="verbs.length === 0" class="p-8 text-center card">
+    <div v-else-if="verbs.length === 0 && !loading" class="p-8 text-center card">
       <div class="text-gray-500">
         <p class="mb-4 text-xl">Aún no hay verbos disponibles para practicar</p>
         <p class="mb-6">Los verbos se cargan desde la API</p>
@@ -22,7 +109,7 @@
     </div>
 
     <!-- Práctica activa -->
-    <div v-else class="space-y-6">
+    <div v-else-if="practiceStarted" class="space-y-6">
       <!-- Verbo actual -->
       <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 card">
         <div class="text-center">
@@ -348,15 +435,21 @@ definePageMeta({
 })
 
 const { verbs, loading, fetchVerbs, selectRandomVerb } = useVerbs()
+const { groups: verbGroups, fetchGroups: fetchVerbGroups, fetchGroup: fetchVerbGroup } = useVerbGroups()
 const { PRONOUNS, getPronounTranslation, checkAnswer: checkConjugation } = useConjugation()
 const { speak, stop, transliterateToSpanish } = usePronunciation()
 
 // Estado local
+const practiceStarted = ref(false)
+const selectedPracticeType = ref('conjugation')
+const selectedSource = ref('all')
+const practiceVerbs = ref([])
 const currentVerb = ref(null)
 const selectedTense = ref('present')
 const userInputs = reactive({})
 const checkedAnswers = reactive({})
 const isPlayingPronoun = reactive({})
+const groupDetailsCache = ref({})
 
 // Inicializar todos los campos
 const initializeFields = () => {
@@ -404,24 +497,77 @@ const initializeFields = () => {
   }
 }
 
-// Cargar verbos al montar
+// Obtener cantidad de verbos en un grupo
+const getGroupVerbCount = (groupId) => {
+  const cacheKey = `verbs-${groupId}`
+  if (groupDetailsCache.value[cacheKey]) {
+    return (groupDetailsCache.value[cacheKey].verbs || []).length
+  }
+  return 0
+}
+
+// Iniciar práctica
+const startPractice = (type) => {
+  selectedPracticeType.value = type
+}
+
+// Confirmar inicio de práctica
+const confirmStartPractice = async () => {
+  if (!selectedSource.value || !selectedPracticeType.value) return
+
+  // Cargar verbos según la fuente seleccionada
+  if (selectedSource.value === 'all') {
+    practiceVerbs.value = verbs.value
+  } else if (selectedSource.value.startsWith('group-')) {
+    const groupId = parseInt(selectedSource.value.replace('group-', ''))
+    const cacheKey = `verbs-${groupId}`
+
+    if (!groupDetailsCache.value[cacheKey]) {
+      const group = await fetchVerbGroup(groupId)
+      if (group) {
+        groupDetailsCache.value[cacheKey] = group
+        practiceVerbs.value = group.verbs || []
+      } else {
+        alert('Error al cargar el grupo')
+        return
+      }
+    } else {
+      practiceVerbs.value = groupDetailsCache.value[cacheKey].verbs || []
+    }
+  }
+
+  if (practiceVerbs.value.length === 0) {
+    alert('No hay verbos disponibles para practicar')
+    return
+  }
+
+  practiceStarted.value = true
+  initializeFields()
+  newVerb()
+}
+
+// Cargar verbos y grupos al montar
 onMounted(async () => {
   // Esperar un tick para asegurar que todo esté inicializado
   await nextTick()
   // Inicializar campos después de que PRONOUNS esté disponible
   initializeFields()
-  await fetchVerbs()
-  console.log(verbs.value)
-  if (verbs.value.length > 0) {
-    newVerb()
-  }
+  await Promise.all([
+    fetchVerbs(),
+    fetchVerbGroups()
+  ])
 })
 
 // Seleccionar nuevo verbo
 const newVerb = () => {
   stop()
   resetPractice()
-  currentVerb.value = selectRandomVerb()
+  if (practiceVerbs.value.length > 0) {
+    const randomIndex = Math.floor(Math.random() * practiceVerbs.value.length)
+    currentVerb.value = practiceVerbs.value[randomIndex]
+  } else {
+    currentVerb.value = selectRandomVerb()
+  }
 }
 
 // Reiniciar práctica

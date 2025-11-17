@@ -35,9 +35,12 @@
 
     <!-- Formulario para crear/editar grupo -->
     <div class="mb-8 p-6 card">
-      <h2 class="mb-4 font-semibold text-gray-700 text-2xl">
-        {{ editingGroup ? 'Editar Grupo' : 'Crear Nuevo Grupo' }}
-      </h2>
+        <h2 class="mb-4 font-semibold text-gray-700 text-2xl">
+          {{ editingGroup ? 'Editar Grupo' : 'Crear Nuevo Grupo' }}
+        </h2>
+        <p v-if="editingGroup" class="mb-4 text-gray-600 text-sm">
+          Este grupo tiene {{ getGroupItemCount(editingGroup.id) }} {{ groupType === 'verbs' ? 'verbos' : 'sustantivos' }}
+        </p>
 
       <form @submit.prevent="handleSaveGroup" class="space-y-4">
         <div v-if="error" class="bg-red-50 p-3 rounded-lg text-red-600 text-sm">
@@ -104,12 +107,23 @@
         >
           <div class="flex justify-between items-start">
             <div class="flex-1">
-              <h3 class="font-medium text-gray-800 text-lg">{{ group.name_group }}</h3>
+              <div class="flex items-center gap-3">
+                <h3 class="font-medium text-gray-800 text-lg">{{ group.name_group }}</h3>
+                <span class="bg-blue-100 px-2 py-1 rounded font-semibold text-blue-700 text-xs">
+                  {{ getGroupItemCount(group.id) }} {{ groupType === 'verbs' ? 'verbos' : 'sustantivos' }}
+                </span>
+              </div>
               <p class="mt-1 text-gray-500 text-sm">
                 Creado: {{ new Date(group.created_at).toLocaleDateString() }}
               </p>
             </div>
             <div class="flex gap-2">
+              <button
+                @click="viewGroupDetails(group)"
+                class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded font-semibold text-white transition-colors"
+              >
+                Ver Detalles
+              </button>
               <button
                 @click="editGroup(group)"
                 class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded font-semibold text-white transition-colors"
@@ -233,6 +247,59 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de detalles del grupo -->
+    <div
+      v-if="showGroupDetailsModal"
+      class="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50"
+      @click.self="closeGroupDetailsModal"
+    >
+      <div class="bg-white mx-4 p-6 rounded-lg w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-gray-800 text-xl">
+            Detalles: {{ selectedGroupDetails?.name_group }}
+          </h3>
+          <button
+            @click="closeGroupDetailsModal"
+            class="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <div v-if="loadingGroupDetails" class="py-8 text-gray-500 text-center">
+          <p>Cargando detalles...</p>
+        </div>
+        <div v-else-if="selectedGroupDetails">
+          <div class="bg-blue-50 mb-4 p-4 rounded-lg">
+            <p class="font-semibold text-gray-700">
+              Total: {{ getGroupItems(selectedGroupDetails).length }} {{ groupType === 'verbs' ? 'verbos' : 'sustantivos' }}
+            </p>
+          </div>
+          <div class="space-y-2 max-h-96 overflow-y-auto">
+            <div
+              v-for="item in getGroupItems(selectedGroupDetails)"
+              :key="item.id"
+              class="flex justify-between items-center bg-gray-50 hover:bg-gray-100 p-3 rounded-lg"
+            >
+              <div class="flex-1">
+                <p class="font-medium text-gray-800">
+                  <template v-if="groupType === 'verbs'">
+                    {{ item.imperfective?.infinitive?.word?.word || 'N/A' }}
+                  </template>
+                  <template v-else>
+                    {{ item.noun }}
+                  </template>
+                </p>
+                <p v-if="getSpanishTranslation(item)" class="mt-1 text-gray-500 text-sm">
+                  {{ getSpanishTranslation(item) }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -251,11 +318,14 @@ const groupName = ref('')
 const editingGroup = ref(null)
 const error = ref('')
 const showAddItemsModal = ref(false)
+const showGroupDetailsModal = ref(false)
 const selectedGroup = ref(null)
 const selectedGroupDetails = ref(null)
 const searchQuery = ref('')
 const loadingItems = ref(false)
+const loadingGroupDetails = ref(false)
 const addingItemId = ref(null)
+const groupDetailsCache = ref({})
 
 // Computed
 const currentGroups = computed(() => {
@@ -307,6 +377,66 @@ const isItemInGroup = (itemId) => {
   } else {
     return selectedGroupDetails.value.nouns?.some((n) => n.id === itemId) || false
   }
+}
+
+// Obtener cantidad de items en un grupo
+const getGroupItemCount = (groupId) => {
+  const cacheKey = `${groupType.value}-${groupId}`
+  if (groupDetailsCache.value[cacheKey]) {
+    return getGroupItems(groupDetailsCache.value[cacheKey]).length
+  }
+  return 0
+}
+
+// Obtener items de un grupo
+const getGroupItems = (group) => {
+  if (!group) return []
+  if (groupType.value === 'verbs') {
+    return group.verbs || []
+  } else {
+    return group.nouns || []
+  }
+}
+
+// Ver detalles del grupo
+const viewGroupDetails = async (group) => {
+  selectedGroup.value = group
+  showGroupDetailsModal.value = true
+  loadingGroupDetails.value = true
+
+  const cacheKey = `${groupType.value}-${group.id}`
+
+  // Usar cache si existe
+  if (groupDetailsCache.value[cacheKey]) {
+    selectedGroupDetails.value = groupDetailsCache.value[cacheKey]
+    loadingGroupDetails.value = false
+    return
+  }
+
+  try {
+    if (groupType.value === 'verbs') {
+      selectedGroupDetails.value = await fetchVerbGroup(group.id)
+    } else {
+      selectedGroupDetails.value = await fetchNounGroup(group.id)
+    }
+
+    // Guardar en cache
+    if (selectedGroupDetails.value) {
+      groupDetailsCache.value[cacheKey] = selectedGroupDetails.value
+    }
+  } catch (err) {
+    console.error('Error loading group details:', err)
+    selectedGroupDetails.value = null
+  } finally {
+    loadingGroupDetails.value = false
+  }
+}
+
+// Cerrar modal de detalles
+const closeGroupDetailsModal = () => {
+  showGroupDetailsModal.value = false
+  selectedGroup.value = null
+  selectedGroupDetails.value = null
 }
 
 // Métodos
@@ -379,18 +509,27 @@ const openAddItemsModal = async (group) => {
   showAddItemsModal.value = true
 
   // Cargar detalles del grupo para saber qué items ya están incluidos
-  loadingItems.value = true
-  try {
-    if (groupType.value === 'verbs') {
-      selectedGroupDetails.value = await fetchVerbGroup(group.id)
-    } else {
-      selectedGroupDetails.value = await fetchNounGroup(group.id)
+  const cacheKey = `${groupType.value}-${group.id}`
+  if (groupDetailsCache.value[cacheKey]) {
+    selectedGroupDetails.value = groupDetailsCache.value[cacheKey]
+  } else {
+    loadingItems.value = true
+    try {
+      if (groupType.value === 'verbs') {
+        selectedGroupDetails.value = await fetchVerbGroup(group.id)
+      } else {
+        selectedGroupDetails.value = await fetchNounGroup(group.id)
+      }
+      // Guardar en cache
+      if (selectedGroupDetails.value) {
+        groupDetailsCache.value[cacheKey] = selectedGroupDetails.value
+      }
+    } catch (err) {
+      console.error('Error loading group details:', err)
+      selectedGroupDetails.value = null
+    } finally {
+      loadingItems.value = false
     }
-  } catch (err) {
-    console.error('Error loading group details:', err)
-    selectedGroupDetails.value = null
-  } finally {
-    loadingItems.value = false
   }
 
   await loadItems(1)
@@ -432,13 +571,20 @@ const addItemToGroup = async (itemId) => {
 
     if (result.success) {
       // Recargar detalles del grupo para actualizar la lista
+      const cacheKey = `${groupType.value}-${selectedGroup.value.id}`
       if (groupType.value === 'verbs') {
         selectedGroupDetails.value = await fetchVerbGroup(selectedGroup.value.id)
       } else {
         selectedGroupDetails.value = await fetchNounGroup(selectedGroup.value.id)
       }
+      // Actualizar cache
+      if (selectedGroupDetails.value) {
+        groupDetailsCache.value[cacheKey] = selectedGroupDetails.value
+      }
       // Recargar items para actualizar la lista
       await loadItems(itemsPagination.value.page)
+      // Recargar grupos para actualizar contadores
+      await loadGroups()
     } else {
       alert(result.error || `Error al agregar ${groupType.value === 'verbs' ? 'verbo' : 'sustantivo'}`)
     }
@@ -447,13 +593,45 @@ const addItemToGroup = async (itemId) => {
   }
 }
 
+// Cargar detalles de grupos para mostrar contadores
+const loadGroupDetailsForCounters = async () => {
+  for (const group of currentGroups.value) {
+    const cacheKey = `${groupType.value}-${group.id}`
+    if (!groupDetailsCache.value[cacheKey]) {
+      try {
+        if (groupType.value === 'verbs') {
+          const details = await fetchVerbGroup(group.id)
+          if (details) {
+            groupDetailsCache.value[cacheKey] = details
+          }
+        } else {
+          const details = await fetchNounGroup(group.id)
+          if (details) {
+            groupDetailsCache.value[cacheKey] = details
+          }
+        }
+      } catch (err) {
+        console.error('Error loading group details for counter:', err)
+      }
+    }
+  }
+}
+
 // Watchers
 watch(groupType, () => {
   editingGroup.value = null
   groupName.value = ''
   error.value = ''
+  groupDetailsCache.value = {}
   loadGroups()
 })
+
+watch(currentGroups, () => {
+  // Cargar detalles cuando cambian los grupos para actualizar contadores
+  if (currentGroups.value.length > 0) {
+    loadGroupDetailsForCounters()
+  }
+}, { deep: true })
 
 // Cargar grupos al montar
 onMounted(() => {

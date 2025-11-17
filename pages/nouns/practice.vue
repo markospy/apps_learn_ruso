@@ -10,8 +10,95 @@
       <p class="text-gray-600">Cargando sustantivos...</p>
     </div>
 
+    <!-- Ventana de selección de práctica -->
+    <div v-if="!practiceStarted && !loading && nouns.length > 0" class="p-6 card">
+      <h2 class="mb-6 font-semibold text-gray-800 text-2xl">Selecciona tu práctica</h2>
+
+      <!-- Tipos de práctica -->
+      <div class="mb-6">
+        <h3 class="mb-3 font-medium text-gray-700 text-lg">Tipo de Ejercicio</h3>
+        <div class="gap-3 grid grid-cols-1 md:grid-cols-2">
+          <button
+            @click="startPractice('gender')"
+            class="bg-blue-50 hover:bg-blue-100 p-4 border-2 border-blue-200 rounded-lg text-left transition-colors"
+          >
+            <h4 class="mb-1 font-semibold text-blue-800">Género</h4>
+            <p class="text-blue-600 text-sm">Identifica el género de los sustantivos</p>
+          </button>
+          <button
+            @click="startPractice('plural')"
+            class="bg-purple-50 hover:bg-purple-100 p-4 border-2 border-purple-200 rounded-lg text-left transition-colors"
+          >
+            <h4 class="mb-1 font-semibold text-purple-800">Plural</h4>
+            <p class="text-purple-600 text-sm">Practica la formación del plural</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selección de fuente -->
+      <div class="mb-6">
+        <h3 class="mb-3 font-medium text-gray-700 text-lg">¿Con qué quieres practicar?</h3>
+        <div class="space-y-3">
+          <button
+            @click="selectedSource = 'all'"
+            :class="[
+              'w-full p-4 rounded-lg text-left transition-colors',
+              selectedSource === 'all'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+            ]"
+          >
+            <div class="flex justify-between items-center">
+              <div>
+                <h4 class="mb-1 font-semibold">Todos los Sustantivos</h4>
+                <p class="opacity-90 text-sm">{{ nouns.length }} sustantivos disponibles</p>
+              </div>
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+          </button>
+
+          <div v-if="nounGroups.length > 0">
+            <p class="mb-2 font-medium text-gray-600 text-sm">O selecciona un grupo:</p>
+            <div class="space-y-2">
+              <button
+                v-for="group in nounGroups"
+                :key="group.id"
+                @click="selectedSource = `group-${group.id}`"
+                :class="[
+                  'w-full p-3 rounded-lg text-left transition-colors',
+                  selectedSource === `group-${group.id}`
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                ]"
+              >
+                <div class="flex justify-between items-center">
+                  <div>
+                    <h4 class="font-semibold">{{ group.name_group }}</h4>
+                    <p class="opacity-90 text-sm">{{ getGroupNounCount(group.id) }} sustantivos</p>
+                  </div>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        @click="confirmStartPractice"
+        :disabled="!selectedSource || !selectedPracticeType"
+        class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 py-3 rounded-lg w-full font-semibold text-white transition-colors disabled:cursor-not-allowed"
+      >
+        Comenzar Práctica
+      </button>
+    </div>
+
     <!-- Sin sustantivos -->
-    <div v-else-if="nouns.length === 0" class="p-8 text-center card">
+    <div v-else-if="nouns.length === 0 && !loading" class="p-8 text-center card">
       <div class="text-gray-500">
         <p class="mb-4 text-xl">Aún no hay sustantivos disponibles para practicar</p>
         <p class="mb-6">Los sustantivos se cargan desde la API</p>
@@ -22,7 +109,7 @@
     </div>
 
     <!-- Práctica activa -->
-    <div v-else class="space-y-6">
+    <div v-else-if="practiceStarted" class="space-y-6">
       <!-- Selector de modo de práctica -->
       <div class="bg-white shadow-md p-4 rounded-lg card">
         <label class="block mb-2 font-semibold text-gray-700 text-lg">
@@ -213,11 +300,17 @@ definePageMeta({
 })
 
 const { nouns, loading, fetchNouns, selectRandomNoun } = useNouns()
+const { groups: nounGroups, fetchGroups: fetchNounGroups, fetchGroup: fetchNounGroup } = useNounGroups()
 const { checkAnswer: checkConjugation } = useConjugation()
 
 // Estado local
+const practiceStarted = ref(false)
+const selectedPracticeType = ref('gender')
+const selectedSource = ref('all')
+const practiceNouns = ref([])
 const currentNoun = ref(null)
 const practiceMode = ref('gender')
+const groupDetailsCache = ref({})
 
 // Estado para práctica de género
 const answeredGender = ref(false)
@@ -239,13 +332,82 @@ const accuracy = computed(() => {
   return total > 0 ? Math.round((stats.correct / total) * 100) : 0
 })
 
-// Cargar sustantivos al montar
-onMounted(async () => {
-  await fetchNouns()
-  if (nouns.value.length > 0) {
-    nextNoun()
+// Obtener cantidad de sustantivos en un grupo
+const getGroupNounCount = (groupId) => {
+  const cacheKey = `nouns-${groupId}`
+  if (groupDetailsCache.value[cacheKey]) {
+    return (groupDetailsCache.value[cacheKey].nouns || []).length
   }
+  return 0
+}
+
+// Iniciar práctica
+const startPractice = (type) => {
+  selectedPracticeType.value = type
+  practiceMode.value = type
+}
+
+// Confirmar inicio de práctica
+const confirmStartPractice = async () => {
+  if (!selectedSource.value || !selectedPracticeType.value) return
+
+  // Cargar sustantivos según la fuente seleccionada
+  if (selectedSource.value === 'all') {
+    practiceNouns.value = nouns.value
+  } else if (selectedSource.value.startsWith('group-')) {
+    const groupId = parseInt(selectedSource.value.replace('group-', ''))
+    const cacheKey = `nouns-${groupId}`
+
+    if (!groupDetailsCache.value[cacheKey]) {
+      const group = await fetchNounGroup(groupId)
+      if (group) {
+        groupDetailsCache.value[cacheKey] = group
+        practiceNouns.value = group.nouns || []
+      } else {
+        alert('Error al cargar el grupo')
+        return
+      }
+    } else {
+      practiceNouns.value = groupDetailsCache.value[cacheKey].nouns || []
+    }
+  }
+
+  if (practiceNouns.value.length === 0) {
+    alert('No hay sustantivos disponibles para practicar')
+    return
+  }
+
+  practiceStarted.value = true
+  nextNoun()
+}
+
+// Cargar sustantivos y grupos al montar
+onMounted(async () => {
+  await Promise.all([
+    fetchNouns(),
+    fetchNounGroups()
+  ])
 })
+
+// Siguiente sustantivo
+const nextNoun = () => {
+  // Resetear estado de género
+  answeredGender.value = false
+  selectedGender.value = null
+  isCorrectGender.value = false
+
+  // Resetear estado de plural
+  answeredPlural.value = false
+  userPluralInput.value = ''
+  isCorrectPlural.value = false
+
+  if (practiceNouns.value.length > 0) {
+    const randomIndex = Math.floor(Math.random() * practiceNouns.value.length)
+    currentNoun.value = practiceNouns.value[randomIndex]
+  } else if (nouns.value.length > 0) {
+    currentNoun.value = selectRandomNoun()
+  }
+}
 
 const genderLabel = (gender) => {
   const labels = {
@@ -284,23 +446,6 @@ const checkPlural = () => {
   } else {
     stats.incorrect++
   }
-}
-
-// Siguiente sustantivo
-const nextNoun = () => {
-  if (nouns.value.length === 0) return
-
-  // Resetear estado de género
-  answeredGender.value = false
-  selectedGender.value = null
-  isCorrectGender.value = false
-
-  // Resetear estado de plural
-  answeredPlural.value = false
-  userPluralInput.value = ''
-  isCorrectPlural.value = false
-
-  currentNoun.value = selectRandomNoun()
 }
 
 // Reiniciar práctica
